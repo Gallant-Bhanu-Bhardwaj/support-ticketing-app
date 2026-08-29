@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.models.ticket import Ticket, TicketCategory, TicketPriority, TicketStatus
 
@@ -100,12 +100,40 @@ def test_csv_export_produces_parseable_file_with_expected_rows(client, agent_use
         "status",
         "created_at",
         "updated_at",
+        "breach_status",
     ]
     assert len(rows) == 3  # header + 2 tickets
     subjects = {row[1] for row in rows[1:]}
     assert subjects == {"Row one", "Row two"}
     assignees = {row[3] for row in rows[1:]}
     assert assignees == {agent_user.email}
+
+
+def test_csv_export_breach_status_reflects_elapsed_time_against_target(
+    client, agent_user, login_as, db_session
+):
+    now = datetime.now(timezone.utc)
+    make_ticket(
+        db_session,
+        agent_user,
+        subject="Old urgent ticket",
+        priority=TicketPriority.URGENT,  # 4h target
+        created_at=now - timedelta(hours=10),
+    )
+    make_ticket(
+        db_session,
+        agent_user,
+        subject="Fresh low ticket",
+        priority=TicketPriority.LOW,  # 72h target
+        created_at=now - timedelta(hours=1),
+    )
+    login_as(agent_user)
+
+    response = client.get("/tickets/export.csv")
+
+    by_subject = {row[1]: row for row in parse_csv(response)[1:]}
+    assert by_subject["Old urgent ticket"][-1] == "breaching"
+    assert by_subject["Fresh low ticket"][-1] == "on_track"
 
 
 def test_csv_export_is_not_capped_by_page_size(client, agent_user, login_as, db_session):

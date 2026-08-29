@@ -174,7 +174,7 @@ def export_csv(
         sort=sort,
         direction=direction,
     )
-    csv_content = export_service.tickets_to_csv(tickets)
+    csv_content = export_service.tickets_to_csv(db, tickets)
     return Response(
         content=csv_content,
         media_type="text/csv",

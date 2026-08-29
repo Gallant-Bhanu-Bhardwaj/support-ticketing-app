@@ -142,6 +142,53 @@ def test_bulk_close_refuses_an_already_closed_ticket(client, agent_user, supervi
     assert "cannot move a ticket from closed to closed" in response.text.lower()
 
 
+def test_bulk_close_mixed_batch_with_valid_and_already_closed_ticket(
+    client, agent_user, supervisor_user, login_as, db_session
+):
+    """One batch, both outcomes a supervisor can actually produce: a valid
+    Resolved ticket succeeds, an already-Closed one is refused by the
+    state-machine check -- not two separate requests."""
+    valid_id = create_ticket_as(client, login_as, agent_user, "Valid resolved ticket")
+    resolve_ticket(client, login_as, agent_user, valid_id)
+
+    already_closed_id = create_ticket_as(client, login_as, agent_user, "Already closed ticket")
+    resolve_ticket(client, login_as, agent_user, already_closed_id)
+    login_as(supervisor_user)
+    client.post("/tickets/bulk/close", data={"ticket_ids": [str(already_closed_id)]})
+
+    response = client.post(
+        "/tickets/bulk/close", data={"ticket_ids": [str(valid_id), str(already_closed_id)]}
+    )
+
+    assert response.status_code == 200
+    body = response.text
+    assert "Valid resolved ticket" in body
+    assert "Already closed ticket" in body
+    assert "1 succeeded, 1 refused" in body
+    assert "cannot move a ticket from closed to closed" in body.lower()
+
+    valid_ticket = db_session.get(Ticket, valid_id)
+    assert valid_ticket.status == TicketStatus.CLOSED
+
+
+def test_bulk_close_refuses_ticket_outside_actor_scope_via_access_check(
+    client, agent_user, second_agent_user, login_as, db_session
+):
+    """Distinct from the supervisor-only refusal: a ticket the actor has no
+    relationship to at all is refused by can_act_on_ticket before the
+    close-specific check is ever reached."""
+    unrelated_id = create_ticket_as(client, login_as, second_agent_user, "Not my ticket at all")
+    resolve_ticket(client, login_as, second_agent_user, unrelated_id)
+
+    login_as(agent_user)
+    response = client.post("/tickets/bulk/close", data={"ticket_ids": [str(unrelated_id)]})
+
+    assert response.status_code == 200
+    assert "0 succeeded, 1 refused" in response.text
+    assert "assigned to or collaborating on" in response.text
+    assert "supervisor" not in response.text.lower()
+
+
 def test_agent_bulk_close_gets_all_refused_report_not_a_blanket_403(client, agent_user, login_as, db_session):
     """No bulk-specific role gate at the route level -- the per-ticket check
     inside lifecycle_service.transition is what does the rejecting."""
