@@ -76,6 +76,19 @@ def agent_user(db_session):
 
 
 @pytest.fixture
+def second_agent_user(db_session):
+    user = User(
+        email="agent2@example.com",
+        hashed_password=hash_password("secret123"),
+        role=UserRole.AGENT,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
 def login_as(client):
     def _login(user, password="secret123"):
         response = client.post(

@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Archived tickets — Support Ticketing{% endblock %}
+{% block title %}My tickets — Support Ticketing{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Archived tickets</h1>
-    <a href="/tickets" class="btn btn-outline-secondary btn-sm">Back to tickets</a>
+    <h1>My tickets</h1>
+    <a href="/tickets" class="btn btn-outline-secondary btn-sm">Back to all tickets</a>
 </div>
+<p class="text-muted">Every ticket where you're the primary assignee or a collaborator.</p>
 
 <table class="table table-hover align-middle">
     <thead>
@@ -17,29 +18,22 @@
             <th>Priority</th>
             <th>Category</th>
             <th>Status</th>
-            <th></th>
+            <th>Created</th>
         </tr>
     </thead>
     <tbody>
         {% for ticket in tickets %}
-        <tr id="ticket-row-{{ ticket.id }}">
+        <tr>
             <td><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
             <td>{{ ticket.requester }}</td>
             <td>{{ ticket.primary_assignee.email }}</td>
             <td>{{ ticket.priority.value }}</td>
             <td>{{ ticket.category.value }}</td>
             <td>{{ ticket.status.value }}</td>
-            <td>
-                <button
-                    class="btn btn-sm btn-outline-primary"
-                    hx-post="/tickets/{{ ticket.id }}/restore?render=none"
-                    hx-target="#ticket-row-{{ ticket.id }}"
-                    hx-swap="outerHTML"
-                >Restore</button>
-            </td>
+            <td>{{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-muted">No archived tickets.</td></tr>
+        <tr><td colspan="7" class="text-muted">No tickets assigned to or collaborated on by you.</td></tr>
         {% endfor %}
     </tbody>
 </table>

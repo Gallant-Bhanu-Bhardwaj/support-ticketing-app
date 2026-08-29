@@ -75,9 +75,9 @@ def test_reply_without_is_internal_defaults_to_customer_visible(client, agent_us
     assert reply.is_internal is False
 
 
-def test_supervisor_can_also_reply(client, supervisor_user, login_as, db_session):
+def test_supervisor_can_also_reply(client, supervisor_user, agent_user, login_as, db_session):
     login_as(supervisor_user)
-    ticket_id = create_ticket(client)
+    ticket_id = create_ticket(client, data={**TICKET_DATA, "primary_assignee_id": str(agent_user.id)})
 
     client.post(
         f"/tickets/{ticket_id}/replies",
@@ -113,3 +113,13 @@ def test_replies_shown_in_chronological_order_and_distinguish_internal(client, a
 
     assert "Internal note" in body
     assert "Customer-visible" in body
+
+
+def test_unrelated_agent_cannot_reply(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id = create_ticket(client)
+
+    login_as(second_agent_user)
+    response = client.post(f"/tickets/{ticket_id}/replies", data={"body": "butting in"})
+
+    assert response.status_code == 403

@@ -4,13 +4,14 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Enum, String, Text, func
+from sqlalchemy import Boolean, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, UTCDateTime
 
 if TYPE_CHECKING:
     from app.models.reply import Reply
+    from app.models.user import User
 
 
 class TicketPriority(str, enum.Enum):
@@ -63,6 +64,7 @@ class Ticket(Base):
         _string_enum(TicketStatus, 20), nullable=False, default=TicketStatus.NEW
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    primary_assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         UTCDateTime, server_default=func.now(), onupdate=func.now()
@@ -71,3 +73,12 @@ class Ticket(Base):
     replies: Mapped[list["Reply"]] = relationship(
         back_populates="ticket", order_by="Reply.created_at"
     )
+    primary_assignee: Mapped["User"] = relationship(foreign_keys=[primary_assignee_id])
+    collaborators: Mapped[list["User"]] = relationship(
+        secondary="ticket_collaborators", order_by="User.email"
+    )
+
+    @property
+    def collaborator_ids(self) -> list[int]:
+        """Satisfies app.services.permissions.TicketLike."""
+        return [user.id for user in self.collaborators]

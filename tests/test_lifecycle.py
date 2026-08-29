@@ -18,7 +18,7 @@ VALID_TICKET = {
 }
 
 
-def make_ticket(db_session, priority=TicketPriority.NORMAL, created_at=T0):
+def make_ticket(db_session, assignee, priority=TicketPriority.NORMAL, created_at=T0):
     ticket = Ticket(
         subject="Test ticket",
         description="desc",
@@ -26,6 +26,7 @@ def make_ticket(db_session, priority=TicketPriority.NORMAL, created_at=T0):
         priority=priority,
         category=TicketCategory.BUG,
         status=TicketStatus.NEW,
+        primary_assignee_id=assignee.id,
         created_at=created_at,
     )
     db_session.add(ticket)
@@ -43,13 +44,13 @@ def create_ticket_via_route(client):
 
 
 def test_new_to_open_succeeds(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     assert ticket.status == TicketStatus.OPEN
 
 
 def test_open_to_pending_succeeds_and_records_period(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.PENDING, agent_user, now=T0 + timedelta(hours=1)
@@ -62,7 +63,7 @@ def test_open_to_pending_succeeds_and_records_period(db_session, agent_user):
 
 
 def test_pending_to_open_succeeds_and_closes_period(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.PENDING, agent_user, now=T0 + timedelta(hours=1)
@@ -77,7 +78,7 @@ def test_pending_to_open_succeeds_and_closes_period(db_session, agent_user):
 
 
 def test_open_to_resolved_succeeds(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.RESOLVED, agent_user, now=T0 + timedelta(hours=1)
@@ -85,8 +86,8 @@ def test_open_to_resolved_succeeds(db_session, agent_user):
     assert ticket.status == TicketStatus.RESOLVED
 
 
-def test_resolved_to_closed_succeeds_for_supervisor(db_session, supervisor_user):
-    ticket = make_ticket(db_session)
+def test_resolved_to_closed_succeeds_for_supervisor(db_session, agent_user, supervisor_user):
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, supervisor_user, now=T0)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.RESOLVED, supervisor_user, now=T0 + timedelta(hours=1)
@@ -101,8 +102,8 @@ def test_resolved_to_closed_succeeds_for_supervisor(db_session, supervisor_user)
     assert period.reopened_at is None
 
 
-def test_closed_to_open_succeeds_within_window(db_session, supervisor_user):
-    ticket = make_ticket(db_session)
+def test_closed_to_open_succeeds_within_window(db_session, agent_user, supervisor_user):
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, supervisor_user, now=T0)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.RESOLVED, supervisor_user, now=T0 + timedelta(hours=1)
@@ -126,7 +127,7 @@ def test_closed_to_open_succeeds_within_window(db_session, supervisor_user):
     [TicketStatus.PENDING, TicketStatus.RESOLVED, TicketStatus.CLOSED],
 )
 def test_illegal_transitions_from_new_are_rejected(db_session, agent_user, to_status):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
 
     with pytest.raises(HTTPException) as exc_info:
         lifecycle_service.transition(db_session, ticket, to_status, agent_user, now=T0)
@@ -137,7 +138,7 @@ def test_illegal_transitions_from_new_are_rejected(db_session, agent_user, to_st
 
 
 def test_illegal_transition_open_to_closed_skipping_resolved(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -149,7 +150,7 @@ def test_illegal_transition_open_to_closed_skipping_resolved(db_session, agent_u
 
 
 def test_illegal_transition_resolved_to_open_rejected(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(db_session, ticket, TicketStatus.RESOLVED, agent_user, now=T0)
 
@@ -161,7 +162,7 @@ def test_illegal_transition_resolved_to_open_rejected(db_session, agent_user):
 
 
 def test_same_status_transition_rejected(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -170,8 +171,8 @@ def test_same_status_transition_rejected(db_session, agent_user):
     assert exc_info.value.status_code == 409
 
 
-def test_closed_to_open_rejected_past_window(db_session, supervisor_user):
-    ticket = make_ticket(db_session)
+def test_closed_to_open_rejected_past_window(db_session, agent_user, supervisor_user):
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, supervisor_user, now=T0)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.RESOLVED, supervisor_user, now=T0 + timedelta(hours=1)
@@ -189,7 +190,7 @@ def test_closed_to_open_rejected_past_window(db_session, supervisor_user):
 
 
 def test_agent_cannot_close_ticket(db_session, agent_user):
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(db_session, ticket, TicketStatus.RESOLVED, agent_user, now=T0)
 
@@ -199,6 +200,19 @@ def test_agent_cannot_close_ticket(db_session, agent_user):
     assert exc_info.value.status_code == 403
     assert "supervisor" in exc_info.value.detail.lower()
     assert ticket.status == TicketStatus.RESOLVED
+
+
+def test_unrelated_agent_cannot_transition_ticket(db_session, agent_user, second_agent_user):
+    """Retrofitted in goal 5: status transitions require assignee/collaborator
+    standing on the ticket, now that assignee data exists."""
+    ticket = make_ticket(db_session, agent_user)
+
+    with pytest.raises(HTTPException) as exc_info:
+        lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, second_agent_user, now=T0)
+
+    assert exc_info.value.status_code == 403
+    assert "assigned to or collaborating" in exc_info.value.detail.lower()
+    assert ticket.status == TicketStatus.NEW
 
 
 # -- server-level enforcement (via the actual route) ------------------------

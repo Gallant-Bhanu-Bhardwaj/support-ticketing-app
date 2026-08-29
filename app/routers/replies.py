@@ -20,6 +20,6 @@ def create_reply(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ticket_service.get_ticket_or_404(db, ticket_id)
-    reply_service.add_reply(db, ticket_id, current_user, reply_in)
+    ticket = ticket_service.get_ticket_or_404(db, ticket_id)
+    reply_service.add_reply(db, ticket, current_user, reply_in)
     return RedirectResponse(url=f"/tickets/{ticket_id}", status_code=303)

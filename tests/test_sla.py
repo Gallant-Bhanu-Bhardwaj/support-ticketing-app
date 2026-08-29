@@ -7,7 +7,7 @@ from app.services.sla_service import elapsed_response_time
 T0 = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
 
-def make_ticket(db_session, created_at=T0):
+def make_ticket(db_session, assignee, created_at=T0):
     ticket = Ticket(
         subject="Test ticket",
         description="desc",
@@ -15,6 +15,7 @@ def make_ticket(db_session, created_at=T0):
         priority=TicketPriority.NORMAL,
         category=TicketCategory.BUG,
         status=TicketStatus.NEW,
+        primary_assignee_id=assignee.id,
         created_at=created_at,
     )
     db_session.add(ticket)
@@ -104,7 +105,7 @@ def test_elapsed_for_ticket_with_multiple_pending_cycles(db_session, agent_user)
     """Integration check for the multiple-Pending-cycles case, driven through
     real Open->Pending->Open->Pending->Open transitions rather than a
     hand-built period list."""
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
 
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(
@@ -129,7 +130,7 @@ def test_elapsed_for_ticket_with_multiple_pending_cycles(db_session, agent_user)
 def test_elapsed_for_ticket_with_multiple_closed_cycles(db_session, agent_user, supervisor_user):
     """Integration check for the multiple-Closed-cycles case, driven through
     real Resolved->Closed->Open transitions repeated twice."""
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
 
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(
@@ -161,7 +162,7 @@ def test_elapsed_for_ticket_reflects_real_lifecycle_transitions(db_session, agen
     """Integration check: elapsed_response_time_for_ticket, fed by the actual
     period rows lifecycle_service.transition() creates, agrees with the pure
     calculation -- the two aren't just consistent in isolation."""
-    ticket = make_ticket(db_session)
+    ticket = make_ticket(db_session, agent_user)
 
     lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
     lifecycle_service.transition(

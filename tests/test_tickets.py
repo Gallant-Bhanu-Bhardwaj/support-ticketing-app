@@ -33,11 +33,64 @@ def test_create_ticket(client, agent_user, login_as):
     assert "new" in detail.text
 
 
+def test_create_as_agent_defaults_to_self_assigned(client, agent_user, login_as, db_session):
+    login_as(agent_user)
+
+    ticket_id, response = create_ticket(client)
+
+    assert response.status_code == 303
+    ticket = db_session.get(Ticket, ticket_id)
+    assert ticket.primary_assignee_id == agent_user.id
+
+
+def test_create_as_agent_ignores_a_different_submitted_assignee(
+    client, agent_user, second_agent_user, login_as, db_session
+):
+    """Server-side enforcement: an agent can never assign a ticket to anyone
+    but themselves, even at creation, regardless of what's submitted."""
+    login_as(agent_user)
+
+    ticket_id, response = create_ticket(
+        client, data={**VALID_TICKET, "primary_assignee_id": str(second_agent_user.id)}
+    )
+
+    assert response.status_code == 303
+    ticket = db_session.get(Ticket, ticket_id)
+    assert ticket.primary_assignee_id == agent_user.id
+
+
+def test_create_as_supervisor_requires_choosing_an_agent(client, supervisor_user, login_as):
+    login_as(supervisor_user)
+
+    response = client.post("/tickets", data=VALID_TICKET)
+
+    assert response.status_code == 422
+
+
+def test_create_as_supervisor_with_chosen_agent_succeeds(
+    client, supervisor_user, agent_user, login_as, db_session
+):
+    login_as(supervisor_user)
+
+    ticket_id, response = create_ticket(
+        client, data={**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
+    )
+
+    assert response.status_code == 303
+    ticket = db_session.get(Ticket, ticket_id)
+    assert ticket.primary_assignee_id == agent_user.id
+
+
 def test_edit_ticket(client, agent_user, login_as, db_session):
     login_as(agent_user)
     ticket_id, _ = create_ticket(client)
 
-    updated = {**VALID_TICKET, "subject": "Cannot log in — updated", "priority": "urgent"}
+    updated = {
+        **VALID_TICKET,
+        "subject": "Cannot log in — updated",
+        "priority": "urgent",
+        "primary_assignee_id": str(agent_user.id),
+    }
     response = client.post(f"/tickets/{ticket_id}", data=updated, follow_redirects=False)
 
     assert response.status_code == 303
@@ -46,14 +99,45 @@ def test_edit_ticket(client, agent_user, login_as, db_session):
     assert "urgent" in detail.text
 
 
-def test_supervisor_can_also_create_and_edit(client, supervisor_user, login_as):
+def test_agent_cannot_reassign_via_edit(client, agent_user, second_agent_user, login_as, db_session):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    updated = {**VALID_TICKET, "primary_assignee_id": str(second_agent_user.id)}
+    response = client.post(f"/tickets/{ticket_id}", data=updated)
+
+    assert response.status_code == 403
+    ticket = db_session.get(Ticket, ticket_id)
+    assert ticket.primary_assignee_id == agent_user.id
+
+
+def test_supervisor_can_also_create_and_edit(client, supervisor_user, agent_user, login_as):
     login_as(supervisor_user)
 
-    ticket_id, response = create_ticket(client)
+    ticket_id, response = create_ticket(
+        client, data={**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
+    )
     assert response.status_code == 303
 
-    response = client.post(f"/tickets/{ticket_id}", data=VALID_TICKET, follow_redirects=False)
+    updated = {**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
+    response = client.post(f"/tickets/{ticket_id}", data=updated, follow_redirects=False)
     assert response.status_code == 303
+
+
+def test_supervisor_can_reassign_via_edit(
+    client, supervisor_user, agent_user, second_agent_user, login_as, db_session
+):
+    login_as(supervisor_user)
+    ticket_id, _ = create_ticket(
+        client, data={**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
+    )
+
+    updated = {**VALID_TICKET, "primary_assignee_id": str(second_agent_user.id)}
+    response = client.post(f"/tickets/{ticket_id}", data=updated, follow_redirects=False)
+
+    assert response.status_code == 303
+    ticket = db_session.get(Ticket, ticket_id)
+    assert ticket.primary_assignee_id == second_agent_user.id
 
 
 def test_archive_removes_ticket_from_default_list(client, agent_user, login_as):
@@ -135,3 +219,39 @@ def test_archive_via_htmx_returns_actions_panel_for_detail_page(client, agent_us
 
     assert response.status_code == 200
     assert "Restore" in response.text
+
+
+# -- goal 5 retrofit: agents restricted to tickets they're assigned to or
+# collaborating on -------------------------------------------------------
+
+
+def test_unrelated_agent_cannot_edit_ticket(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(second_agent_user)
+    updated = {**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
+    response = client.post(f"/tickets/{ticket_id}", data=updated)
+
+    assert response.status_code == 403
+
+
+def test_unrelated_agent_cannot_archive_ticket(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(second_agent_user)
+    response = client.post(f"/tickets/{ticket_id}/archive")
+
+    assert response.status_code == 403
+
+
+def test_supervisor_can_edit_any_ticket(client, agent_user, supervisor_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(supervisor_user)
+    updated = {**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
+    response = client.post(f"/tickets/{ticket_id}", data=updated, follow_redirects=False)
+
+    assert response.status_code == 303

@@ -39,6 +39,12 @@ def transition(
     now = now or _utcnow()
     current = ticket.status
 
+    if not permissions.can_act_on_ticket(actor, ticket):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only change status on tickets you're assigned to or collaborating on.",
+        )
+
     if new_status not in ALLOWED_TRANSITIONS.get(current, set()):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

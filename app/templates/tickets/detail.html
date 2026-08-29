@@ -13,7 +13,8 @@
         <p class="text-muted mb-0">
             Requester: {{ ticket.requester }} &middot;
             Priority: {{ ticket.priority.value }} &middot;
-            Category: {{ ticket.category.value }}
+            Category: {{ ticket.category.value }} &middot;
+            Assignee: {{ ticket.primary_assignee.email }}
         </p>
     </div>
     <div class="text-end">
@@ -27,6 +28,33 @@
 {% include "tickets/partials/status_actions.html" %}
 
 <p>{{ ticket.description }}</p>
+
+<hr>
+
+<h2>Collaborators</h2>
+<ul class="list-unstyled">
+    {% for collaborator in ticket.collaborators %}
+    <li class="mb-1">
+        {{ collaborator.email }}
+        <form method="post" action="/tickets/{{ ticket.id }}/collaborators/{{ collaborator.id }}/remove" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+        </form>
+    </li>
+    {% else %}
+    <li class="text-muted">No collaborators yet.</li>
+    {% endfor %}
+</ul>
+
+{% if available_agents %}
+<form method="post" action="/tickets/{{ ticket.id }}/collaborators" class="col-12 col-md-6 d-flex gap-2 mb-3">
+    <select class="form-select" name="user_id" required>
+        {% for agent in available_agents %}
+        <option value="{{ agent.id }}">{{ agent.email }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline-primary text-nowrap">Add collaborator</button>
+</form>
+{% endif %}
 
 <hr>
 

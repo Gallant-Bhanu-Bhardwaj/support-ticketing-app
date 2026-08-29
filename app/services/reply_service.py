@@ -1,9 +1,12 @@
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.reply import Reply
+from app.models.ticket import Ticket
 from app.models.user import User
 from app.schemas.reply import ReplyCreate
+from app.services import permissions
 
 
 def list_replies_for_ticket(db: Session, ticket_id: int) -> list[Reply]:
@@ -15,9 +18,15 @@ def list_replies_for_ticket(db: Session, ticket_id: int) -> list[Reply]:
     return list(db.scalars(stmt))
 
 
-def add_reply(db: Session, ticket_id: int, author: User, data: ReplyCreate) -> Reply:
+def add_reply(db: Session, ticket: Ticket, author: User, data: ReplyCreate) -> Reply:
+    if not permissions.can_act_on_ticket(author, ticket):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only reply to tickets you're assigned to or collaborating on.",
+        )
+
     reply = Reply(
-        ticket_id=ticket_id,
+        ticket_id=ticket.id,
         author_id=author.id,
         body=data.body,
         is_internal=data.is_internal,

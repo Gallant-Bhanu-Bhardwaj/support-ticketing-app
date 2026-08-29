@@ -44,6 +44,28 @@
             {% endfor %}
         </select>
     </div>
+    <div class="mb-3">
+        <label class="form-label">Primary assignee</label>
+        {% if current_user.role.value == "supervisor" %}
+        <select class="form-select" id="primary_assignee_id" name="primary_assignee_id" required>
+            {% if not ticket %}<option value="" disabled selected>Choose an agent&hellip;</option>{% endif %}
+            {% for agent in agents %}
+            <option
+                value="{{ agent.id }}"
+                {% if ticket and ticket.primary_assignee_id == agent.id %}selected{% endif %}
+            >{{ agent.email }}</option>
+            {% endfor %}
+        </select>
+        {% else %}
+        {% if ticket %}
+        <input type="text" class="form-control" value="{{ ticket.primary_assignee.email }}" disabled>
+        <input type="hidden" name="primary_assignee_id" value="{{ ticket.primary_assignee_id }}">
+        {% else %}
+        <input type="text" class="form-control" value="{{ current_user.email }} (you)" disabled>
+        {% endif %}
+        <div class="form-text">Only a supervisor can reassign a ticket.</div>
+        {% endif %}
+    </div>
     <button type="submit" class="btn btn-primary">{{ "Save" if ticket else "Create" }}</button>
 </form>
 {% endblock %}

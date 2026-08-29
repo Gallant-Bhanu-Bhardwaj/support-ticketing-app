@@ -1,9 +1,8 @@
 """Ticket authorization rules, shared by every route/service that touches a ticket.
 
-There is no Ticket model yet (that's goal 2). These functions are written against
-a structural TicketLike protocol so the real Ticket model can be passed in
-directly once it exists, as long as it exposes `primary_assignee_id` and
-`collaborator_ids`.
+Written against a structural TicketLike protocol rather than importing the
+Ticket model directly; app.models.ticket.Ticket satisfies it via a real
+primary_assignee_id column and a collaborator_ids property.
 """
 
 from __future__ import annotations
