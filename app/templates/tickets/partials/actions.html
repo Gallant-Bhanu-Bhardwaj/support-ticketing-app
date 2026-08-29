@@ -1,0 +1,19 @@
+<div id="ticket-actions">
+    {% if ticket.is_archived %}
+    <span class="badge text-bg-secondary">Archived</span>
+    <button
+        class="btn btn-sm btn-outline-primary"
+        hx-post="/tickets/{{ ticket.id }}/restore"
+        hx-target="#ticket-actions"
+        hx-swap="outerHTML"
+    >Restore</button>
+    {% else %}
+    <span class="badge text-bg-success">Active</span>
+    <button
+        class="btn btn-sm btn-outline-danger"
+        hx-post="/tickets/{{ ticket.id }}/archive"
+        hx-target="#ticket-actions"
+        hx-swap="outerHTML"
+    >Archive</button>
+    {% endif %}
+</div>

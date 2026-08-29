@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Tickets — Support Ticketing{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Tickets</h1>
+    <div>
+        <a href="/tickets/archived" class="btn btn-outline-secondary btn-sm">View archived</a>
+        <a href="/tickets/new" class="btn btn-primary btn-sm">New ticket</a>
+    </div>
+</div>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Requester</th>
+            <th>Priority</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ticket in tickets %}
+        <tr id="ticket-row-{{ ticket.id }}">
+            <td><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
+            <td>{{ ticket.requester }}</td>
+            <td>{{ ticket.priority.value }}</td>
+            <td>{{ ticket.category.value }}</td>
+            <td>{{ ticket.status.value }}</td>
+            <td>{{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            <td>
+                <button
+                    class="btn btn-sm btn-outline-danger"
+                    hx-post="/tickets/{{ ticket.id }}/archive?render=none"
+                    hx-target="#ticket-row-{{ ticket.id }}"
+                    hx-swap="outerHTML"
+                >Archive</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted">No tickets yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

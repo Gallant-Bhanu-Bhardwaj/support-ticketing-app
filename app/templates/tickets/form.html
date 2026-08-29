@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit ticket" if ticket else "New ticket" }} — Support Ticketing{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit ticket" if ticket else "New ticket" }}</h1>
+
+<form method="post" action="{{ '/tickets/' ~ ticket.id if ticket else '/tickets' }}" class="col-12 col-md-6">
+    <div class="mb-3">
+        <label for="subject" class="form-label">Subject</label>
+        <input
+            type="text" class="form-control" id="subject" name="subject" required
+            value="{{ ticket.subject if ticket else '' }}"
+        >
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="4" required>{{ ticket.description if ticket else '' }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label for="requester" class="form-label">Requester</label>
+        <input
+            type="text" class="form-control" id="requester" name="requester" required
+            value="{{ ticket.requester if ticket else '' }}"
+        >
+    </div>
+    <div class="mb-3">
+        <label for="priority" class="form-label">Priority</label>
+        <select class="form-select" id="priority" name="priority" required>
+            {% for choice in priorities %}
+            <option value="{{ choice.value }}" {% if ticket and ticket.priority == choice %}selected{% endif %}>
+                {{ choice.value }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <select class="form-select" id="category" name="category" required>
+            {% for choice in categories %}
+            <option value="{{ choice.value }}" {% if ticket and ticket.category == choice %}selected{% endif %}>
+                {{ choice.value }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">{{ "Save" if ticket else "Create" }}</button>
+</form>
+{% endblock %}

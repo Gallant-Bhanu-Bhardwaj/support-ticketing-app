@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Archived tickets — Support Ticketing{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Archived tickets</h1>
+    <a href="/tickets" class="btn btn-outline-secondary btn-sm">Back to tickets</a>
+</div>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Requester</th>
+            <th>Priority</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ticket in tickets %}
+        <tr id="ticket-row-{{ ticket.id }}">
+            <td><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
+            <td>{{ ticket.requester }}</td>
+            <td>{{ ticket.priority.value }}</td>
+            <td>{{ ticket.category.value }}</td>
+            <td>{{ ticket.status.value }}</td>
+            <td>
+                <button
+                    class="btn btn-sm btn-outline-primary"
+                    hx-post="/tickets/{{ ticket.id }}/restore?render=none"
+                    hx-target="#ticket-row-{{ ticket.id }}"
+                    hx-swap="outerHTML"
+                >Restore</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted">No archived tickets.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

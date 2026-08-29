@@ -73,3 +73,17 @@ def agent_user(db_session):
     db_session.commit()
     db_session.refresh(user)
     return user
+
+
+@pytest.fixture
+def login_as(client):
+    def _login(user, password="secret123"):
+        response = client.post(
+            "/auth/login",
+            data={"email": user.email, "password": password},
+            follow_redirects=False,
+        )
+        client.cookies.set("access_token", response.cookies["access_token"])
+        return client
+
+    return _login
