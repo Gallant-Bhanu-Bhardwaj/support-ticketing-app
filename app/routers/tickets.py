@@ -96,7 +96,7 @@ def edit_form(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ticket = ticket_service.get_ticket_or_404(db, ticket_id)
+    ticket = ticket_service.get_editable_ticket_or_404(db, ticket_id, current_user)
     return templates.TemplateResponse(
         request, "tickets/form.html", {"ticket": ticket, **_form_choices(db, current_user)}
     )

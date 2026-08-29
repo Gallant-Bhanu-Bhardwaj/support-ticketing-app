@@ -26,6 +26,15 @@ def get_viewable_ticket_or_404(db: Session, ticket_id: int, viewer: User) -> Tic
     return ticket
 
 
+def get_editable_ticket_or_404(db: Session, ticket_id: int, actor: User) -> Ticket:
+    """For GET /tickets/{id}/edit: no reason to hand back a pre-filled form
+    for a ticket the actor couldn't actually submit changes to anyway."""
+    ticket = get_ticket_or_404(db, ticket_id)
+    if not permissions.can_act_on_ticket(actor, ticket):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_ACCESS_DENIED_DETAIL)
+    return ticket
+
+
 def list_tickets(db: Session, *, archived: bool, viewer: User) -> list[Ticket]:
     """The base queue. Per goal 1: supervisors see everything, agents see
     only tickets where they're primary assignee or a collaborator."""

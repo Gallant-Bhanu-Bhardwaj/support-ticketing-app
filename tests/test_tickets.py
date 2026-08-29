@@ -342,3 +342,55 @@ def test_supervisor_queue_shows_every_ticket(client, agent_user, second_agent_us
 
     assert "First agent ticket" in response.text
     assert "Second agent ticket" in response.text
+
+
+# -- edit-form gap: same category as the detail-page one, GET /tickets/{id}/edit
+# must not hand back a pre-filled form for a ticket the actor can't act on --
+
+
+def test_unrelated_agent_cannot_load_edit_form(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(second_agent_user)
+    response = client.get(f"/tickets/{ticket_id}/edit")
+
+    assert response.status_code == 403
+    assert VALID_TICKET["subject"] not in response.text
+
+
+def test_assigned_agent_can_load_edit_form(client, agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    response = client.get(f"/tickets/{ticket_id}/edit")
+
+    assert response.status_code == 200
+    assert VALID_TICKET["subject"] in response.text
+
+
+def test_collaborator_can_load_edit_form(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+    client.post(
+        f"/tickets/{ticket_id}/collaborators",
+        data={"user_id": str(second_agent_user.id)},
+        follow_redirects=False,
+    )
+
+    login_as(second_agent_user)
+    response = client.get(f"/tickets/{ticket_id}/edit")
+
+    assert response.status_code == 200
+    assert VALID_TICKET["subject"] in response.text
+
+
+def test_supervisor_can_load_edit_form_for_any_ticket(client, agent_user, supervisor_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(supervisor_user)
+    response = client.get(f"/tickets/{ticket_id}/edit")
+
+    assert response.status_code == 200
+    assert VALID_TICKET["subject"] in response.text
