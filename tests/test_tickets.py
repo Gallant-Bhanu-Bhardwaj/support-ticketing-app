@@ -18,7 +18,7 @@ def create_ticket(client, data=None):
 def test_tickets_route_requires_authentication(client):
     response = client.get("/tickets")
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 def test_create_ticket(client, agent_user, login_as):

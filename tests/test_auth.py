@@ -28,10 +28,10 @@ def test_login_failure_unknown_email(client):
     assert response.status_code == 401
 
 
-def test_protected_route_without_token_is_forbidden(client):
+def test_protected_route_without_token_is_unauthorized(client):
     response = client.get("/dashboard")
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 def test_protected_route_with_valid_token_succeeds(client, agent_user):

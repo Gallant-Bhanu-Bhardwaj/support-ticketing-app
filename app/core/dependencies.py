@@ -11,15 +11,15 @@ ACCESS_TOKEN_COOKIE = "access_token"
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     token = request.cookies.get(ACCESS_TOKEN_COOKIE)
     if not token:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authenticated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     email = decode_access_token(token)
     if not email:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired session")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired session")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
 
     return user
 

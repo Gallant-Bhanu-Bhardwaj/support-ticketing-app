@@ -21,7 +21,7 @@ def test_reply_requires_authentication(client, agent_user, login_as):
 
     response = client.post(f"/tickets/{ticket_id}/replies", data={"body": "no auth"})
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 def test_reply_attaches_to_ticket_with_author_and_timestamp(client, agent_user, login_as, db_session):
