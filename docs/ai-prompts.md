@@ -768,3 +768,14 @@ Caught at the documentation layer: .env.example previously listed
 JWT_SECRET_KEY=change-me, the exact copy-pasteable-looking-safe value the
 code-level fix was meant to eliminate. Updated to genuinely empty values
 for all variables, including ENVIRONMENT.
+
+Addendum — deployment (commit 058a417): First deploy attempt failed —
+Render defaulted to Python 3.14 (no PYTHON_VERSION pinned), which has no
+pre-built wheel for the pinned pydantic-core version. pip fell back to
+compiling it from source via maturin/Rust, which failed on Render's
+read-only filesystem. Fixed by pinning PYTHON_VERSION=3.12.14 in
+render.yaml — confirmed as the exact local dev interpreter version via
+python3.12 --version before using it, not guessed. Required a Blueprint
+"Manual Sync" (not "Manual Deploy") to actually pick up the new render.yaml
+env var, since Manual Deploy alone doesn't re-read blueprint config for an
+already-existing service. Deploy succeeded after both fixes.
