@@ -5,6 +5,9 @@ build/
 target/
 __pycache__/
 venv/
+.venv/
+.pytest_cache/
+*.db
 .env
 .env.local
 .env.*.local
