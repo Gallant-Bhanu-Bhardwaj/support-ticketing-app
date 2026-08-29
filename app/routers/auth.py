@@ -40,6 +40,7 @@ def login(
         value=token,
         httponly=True,
         samesite="lax",
+        secure=settings.is_production,
         max_age=settings.jwt_expire_minutes * 60,
     )
     return redirect
