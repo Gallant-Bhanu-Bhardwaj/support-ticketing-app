@@ -1,15 +1,16 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
-from app.routers import health
+from app.core.templates import templates
+from app.routers import auth, health, pages
 
 app = FastAPI(title="Support Ticketing")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
 
 app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(pages.router)
 
 
 @app.get("/")
