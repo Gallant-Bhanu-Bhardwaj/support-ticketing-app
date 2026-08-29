@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}SLA Alerts — Support Ticketing{% endblock %}
+
+{% block content %}
+<h1>SLA Alerts</h1>
+<p class="text-muted">Active tickets breaching, or nearing, their target response time.</p>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Assignee</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Elapsed</th>
+            <th>Target</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for alert in alerts %}
+        <tr id="alert-row-{{ alert.ticket.id }}">
+            <td><a href="/tickets/{{ alert.ticket.id }}">{{ alert.ticket.subject }}</a></td>
+            <td>{{ alert.ticket.primary_assignee.email }}</td>
+            <td>{{ alert.ticket.priority.value }}</td>
+            <td>
+                {% if alert.status == "breaching" %}
+                <span class="badge text-bg-danger">Breaching</span>
+                {% else %}
+                <span class="badge text-bg-warning">At risk</span>
+                {% endif %}
+            </td>
+            <td>{{ (alert.elapsed.total_seconds() // 3600) | int }}h</td>
+            <td>{{ (alert.target.total_seconds() // 3600) | int }}h</td>
+            <td>
+                <form method="post" action="/alerts/{{ alert.ticket.id }}/acknowledge">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Acknowledge</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted">No active alerts.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

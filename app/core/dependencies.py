@@ -8,20 +8,28 @@ from app.models.user import User, UserRole
 ACCESS_TOKEN_COOKIE = "access_token"
 
 
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+def _resolve_user_from_cookie(request: Request, db: Session) -> User | None:
     token = request.cookies.get(ACCESS_TOKEN_COOKIE)
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-
+        return None
     email = decode_access_token(token)
     if not email:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
+        return None
+    return db.query(User).filter(User.email == email).first()
 
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
 
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+    user = _resolve_user_from_cookie(request, db)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     return user
+
+
+def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -> User | None:
+    """For the global nav's alert badge, which renders on pages that don't
+    otherwise require a login (home, the login page itself) -- None means
+    "not signed in," not an error."""
+    return _resolve_user_from_cookie(request, db)
 
 
 def require_role(*roles: UserRole):

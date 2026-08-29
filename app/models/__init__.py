@@ -1,4 +1,5 @@
 from app.models.reply import Reply
+from app.models.sla_acknowledgement import SlaAcknowledgement
 from app.models.ticket import Ticket, TicketCategory, TicketPriority, TicketStatus
 from app.models.ticket_collaborator import TicketCollaborator
 from app.models.ticket_history import TicketHistoryEvent, TicketHistoryEventType
@@ -18,4 +19,5 @@ __all__ = [
     "TicketCollaborator",
     "TicketHistoryEvent",
     "TicketHistoryEventType",
+    "SlaAcknowledgement",
 ]

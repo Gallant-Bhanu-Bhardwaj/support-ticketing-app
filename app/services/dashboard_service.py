@@ -8,10 +8,6 @@ from app.models.user import User, UserRole
 from app.services import sla_service
 from app.services.ticket_service import matching_ticket_ids
 
-# A ticket that's Resolved or Closed isn't "currently" doing anything --
-# only these count toward the breaching headline number.
-_ACTIVE_STATUSES = (TicketStatus.NEW, TicketStatus.OPEN, TicketStatus.PENDING)
-
 
 def _week_start(moment: datetime) -> datetime:
     """Monday 00:00 UTC of the calendar week containing `moment`. Used for
@@ -53,7 +49,7 @@ def headline_counts(db: Session, viewer: User, *, now: datetime | None = None) -
 
     active_tickets = list(
         db.scalars(
-            select(Ticket).where(Ticket.id.in_(scope), Ticket.status.in_(_ACTIVE_STATUSES))
+            select(Ticket).where(Ticket.id.in_(scope), Ticket.status.in_(sla_service.ACTIVE_STATUSES))
         )
     )
     breaching_count = sum(

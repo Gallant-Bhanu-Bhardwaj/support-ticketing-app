@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.ticket import Ticket, TicketPriority
+from app.models.ticket import Ticket, TicketPriority, TicketStatus
 from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod
 
 # Documented in docs/decisions.md.
@@ -13,6 +13,11 @@ TARGET_RESPONSE_TIME: dict[TicketPriority, timedelta] = {
     TicketPriority.NORMAL: timedelta(hours=24),
     TicketPriority.LOW: timedelta(hours=72),
 }
+
+# A ticket that's Resolved or Closed isn't "currently" doing anything --
+# shared by the dashboard's breaching count and the alerts list so both
+# agree on which tickets are even subject to a breach determination.
+ACTIVE_STATUSES = (TicketStatus.NEW, TicketStatus.OPEN, TicketStatus.PENDING)
 
 
 def _excluded_duration(started_at: datetime, ended_at: datetime | None, as_of: datetime) -> timedelta:
