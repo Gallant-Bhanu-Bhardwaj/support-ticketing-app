@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 from app.core.templates import templates
-from app.routers import auth, health, pages, tickets
+from app.routers import auth, health, pages, replies, tickets
 
 app = FastAPI(title="Support Ticketing")
 
@@ -12,6 +12,7 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(pages.router)
 app.include_router(tickets.router)
+app.include_router(replies.router)
 
 
 @app.get("/")

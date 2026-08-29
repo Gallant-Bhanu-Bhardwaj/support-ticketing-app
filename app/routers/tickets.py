@@ -10,7 +10,7 @@ from app.core.templates import templates
 from app.models.ticket import TicketCategory, TicketPriority
 from app.models.user import User
 from app.schemas.ticket import TicketWrite
-from app.services import ticket_service
+from app.services import reply_service, ticket_service
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -57,7 +57,10 @@ def detail(
     current_user: User = Depends(get_current_user),
 ):
     ticket = ticket_service.get_ticket_or_404(db, ticket_id)
-    return templates.TemplateResponse(request, "tickets/detail.html", {"ticket": ticket})
+    replies = reply_service.list_replies_for_ticket(db, ticket_id)
+    return templates.TemplateResponse(
+        request, "tickets/detail.html", {"ticket": ticket, "replies": replies}
+    )
 
 
 @router.get("/{ticket_id}/edit")
