@@ -330,6 +330,35 @@ Real gap surfaced and flagged rather than guessed: GET /tickets and GET
 /tickets/{id} weren't restricted by assignment. Resolved in a follow-up —
 see addendum.
 
+Addendum — three-point follow-up (commit 5bc25d3):
+1. View scoping fixed — ticket_service.list_tickets now takes a viewer and
+delegates to list_my_tickets for non-supervisors; GET /tickets and GET
+/tickets/archived inherit this. GET /tickets/{id} now goes through
+get_viewable_ticket_or_404, applying can_view_ticket. Verified on live
+server: agent2 got 403 on agent1's ticket; agent2's queue excluded it;
+agent1's and the supervisor's queues both included it.
+2. Edit-time reassignment — checked, already correct, no gap.
+test_agent_cannot_reassign_via_edit and test_supervisor_can_reassign_via_edit
+were already written and passing from goal 5; update_ticket already routes
+assignee changes through permissions.can_reassign_ticket. No change made —
+verified before deciding not to touch it.
+3. Create-time silent override fixed — create_ticket now raises 403
+("Agents can only create tickets assigned to themselves.") instead of
+silently forcing self-assignment. Confirmed via live server response body.
+Normal UI unaffected, since the create form never sends primary_assignee_id
+for agents.
+86 tests passing.
+
+Related gap surfaced and closed in a follow-up: GET /tickets/{id}/edit had
+no permission check at all, letting an unrelated agent load a pre-filled
+edit form even though submitting it would be rejected. Fixed via
+get_editable_ticket_or_404 (can_act_on_ticket, stricter than
+can_view_ticket). Audited every other GET route for the same pattern:
+GET /tickets/new has no specific ticket's data to leak; collaborators and
+replies expose only POST endpoints; /dashboard, /admin, /auth/login aren't
+ticket-specific. Nothing else had this pattern. Verified on the live
+server: the 403 response contains zero occurrences of the ticket's
+subject. 90 tests passing. Committed as ced6acc.
 
 ## Session 7 — Search, filter, sort, pagination (Goal 6)
 
@@ -379,6 +408,21 @@ empirically before fixing, then accepted filters as raw strings and parsed
 them explicitly, treating empty as "no filter" and genuinely invalid values
 as a real 422 with a clear message.
 
+Addendum — three-item check requested separately (commit 4229232): all
+three were test-coverage gaps, not functional bugs — the underlying code
+was already correct in all three cases.
+1. Combined filters: no test previously exercised more than one filter at
+once. Added test_combined_filters_apply_as_and_not_or, using three tickets
+(matches only status, matches only priority, matches both) to prove AND
+semantics specifically.
+2. Sort direction: code already handled both directions generically
+(sort_column.asc()/desc() by branch), but tests only covered one direction
+per field. Added the missing direction for each field.
+3. Total count: no bug — total and the page of results both derive from
+the same matching_ticket_ids subquery, so they can't structurally drift
+apart. Added a test proving total reflects the filtered count, plus a
+stronger regression guard combining a filter with pagination.
+112 tests passing.
 
 
 ## Session 8 — Bulk actions and CSV export (Goal 7)
