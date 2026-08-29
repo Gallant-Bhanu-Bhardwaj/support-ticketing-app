@@ -14,6 +14,7 @@ one process.
   eight router modules (`auth`, `pages`, `dashboard`, `alerts`, `tickets`,
   `replies`, `collaborators`, `health`), each mounted onto the same `FastAPI`
   instance.
+
 - **Service layer** (`app/services/`) — every business rule lives here, not in
   the routers. `permissions.py` holds the role/ownership checks
   (`can_act_on_ticket`, `can_reassign_ticket`, `can_close_ticket`,
@@ -24,6 +25,7 @@ one process.
   one slice of behavior. Routers call these; nothing routers do bypasses
   them, and every one of those permission functions is re-checked inside the
   service call itself rather than trusted from the caller.
+
 - **SQLAlchemy models** (`app/models/`) — the ORM layer over nine tables
   (detailed in `schema.md`). `app/core/database.py` also defines
   `UTCDateTime`, a custom column type: SQLite silently returns naive
@@ -31,6 +33,7 @@ one process.
   declared, while Postgres returns genuinely tz-aware ones. Every timestamp
   column in the schema uses `UTCDateTime` instead, so datetime arithmetic
   (the whole SLA-clock calculation) behaves identically on both backends.
+
 - **Jinja2 templates** (`app/templates/`) — server-rendered HTML. Bootstrap 5
   and HTMX are pulled from a CDN in `base.html`; there is no JS build step.
   HTMX is used narrowly (archive/restore row removal, the nav's alert-count
@@ -38,10 +41,12 @@ one process.
   Chart.js (also CDN) renders the dashboard's resolved-per-week bar chart
   from a small JSON endpoint (`GET /dashboard/chart-data`) fetched
   client-side.
+
 - **Alembic** (`alembic/`) — one linear migration history, ten revisions,
   applied with `alembic upgrade head`. `alembic/env.py` reads
   `DATABASE_URL` from the same `Settings` object the app uses, and imports
   `app.models` so autogenerate sees every table.
+
 - **The database** — SQLite locally (`app.db`, gitignored), Postgres in
   production. Swapping is a `DATABASE_URL` change only (see the "Database"
   section of `schema.md` for how that's kept true).
@@ -56,6 +61,7 @@ call.
 
 - **Locally:** one `uvicorn app.main:app` process, reading `.env`, talking to
   a SQLite file on disk.
+
 - **Deployed** (`render.yaml`): one Render web service running the same
   `uvicorn` command against a managed Render Postgres database. The build
   step runs `pip install`, `alembic upgrade head`, and the (idempotent) seed
@@ -64,6 +70,7 @@ call.
   env var (never committed, and the app now refuses to start without it —
   see `decisions.md`), `ENVIRONMENT=production` flips the auth cookie's
   `Secure` flag on.
+
 - There is no CDN, load balancer, or separate static-asset host — Bootstrap/
   HTMX/Chart.js are fetched directly from their public CDNs by the browser,
   and the only "static" asset FastAPI itself serves is `app/static/css/app.css`.
@@ -75,6 +82,7 @@ call.
 
 1. The browser submits a form (`body`, optional `is_internal` checkbox) with
    the `access_token` cookie attached.
+
 2. `app/routers/replies.py::create_reply` runs. FastAPI's dependency
    injection resolves `get_current_user` first (`app/core/dependencies.py`):
    it reads the cookie, decodes the JWT (`app/core/security.py`,
@@ -83,21 +91,26 @@ call.
    role change takes effect on the user's very next request rather than
    waiting for the token to expire. A missing or invalid token short-circuits
    here with `401` before the route body ever runs.
+
 3. The route calls `ticket_service.get_ticket_or_404` (a plain fetch — no
    authorization yet) and then `reply_service.add_reply(db, ticket, current_user,
    reply_in)`.
+
 4. Inside `add_reply`: `permissions.can_act_on_ticket(author, ticket)` is
    checked — true if the actor is the primary assignee, a collaborator, or a
    supervisor, false otherwise, raising `403` with an explanatory message if
    not. This is the same function every other mutating ticket action calls;
    there is no separate "can reply" rule.
+
 5. If authorized: a `Reply` row is inserted and flushed (to get its `id`),
    then `history_service.record_reply` inserts a `TicketHistoryEvent`
    referencing that reply — both in the same DB transaction, committed
    together. There is no code path that writes the reply without also
    writing its history row, and no code path that can update or delete a
    `TicketHistoryEvent` afterward.
+
 6. The route returns a `303` redirect back to `GET /tickets/{id}`.
+
 7. That GET re-runs `get_current_user`, then
    `ticket_service.get_viewable_ticket_or_404` (this time checking
    `can_view_ticket`, not `can_act_on_ticket` — viewing and acting are
@@ -119,20 +132,25 @@ invalidate, no eventual consistency to reason about.
   routing by category, ticket merging, an email digest). The brief is
   explicit that these don't substitute for the ten required goals, and there
   was no time left over after those ten plus the review/deployment passes.
+
 - **Self-service registration or a password-reset flow.** The three roles
   are provisioned once via `app/seed.py`; there is no route that creates or
   edits a `User` at all. This is deliberately narrower than a real product
   would need, but goal 1 only asks for sign-in with an existing account.
+
 - **Refresh tokens / session rotation.** One JWT, 24h expiry, no renewal —
   simpler, and sufficient for a demo where re-logging-in once a day is a
   non-issue.
+
 - **Real-time updates.** Two agents viewing the same ticket don't see each
   other's changes without a manual reload. HTMX is used for a few
   same-page interactions (archive/restore, the alert badge) but there's no
   websocket/SSE layer pushing updates across browser sessions.
+
 - **Rate limiting or brute-force protection on login.** `POST /auth/login`
   has no attempt throttling. Acceptable for a take-home's threat model, not
   for a real deployment with real user data.
+  
 - **A background job runner.** SLA breach/at-risk status is computed on
   read (every dashboard/alerts request recomputes it from the period tables)
   rather than by a scheduled job writing a cached "is breaching" flag. This

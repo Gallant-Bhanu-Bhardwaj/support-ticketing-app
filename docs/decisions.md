@@ -1,8 +1,6 @@
 # Decisions
 
-Real decisions made while building this, in the order they happened —
-including one deliberately left open until it's actually built (SLA alert
-scope, goal 10).
+Real decisions made while building this, in the order they happened.
 
 ## Decision — Auth error status codes (Goal 1)
 
@@ -336,6 +334,15 @@ scope, goal 10).
   unified view.
 
 
+## Decision — SLA alert visibility scope (Goal 10)
+
+- **Chose:** Supervisors see all breaching/at-risk tickets in alerts;
+  agents see only tickets where they're primary assignee or collaborator.
+- **Rejected:** A single shared alerts view identical for both roles.
+- **Why:** Consistent with the original goal-1 roles table ("View entire
+  queue — Agent: No, Supervisor: Yes") and the same viewer-scoping already
+  established since goal 5 — reused directly for alerts rather than
+  building parallel logic.
 
 
   ## Decision — SLA at-risk window (Goal 10)
@@ -391,3 +398,25 @@ scope, goal 10).
   a real production deployment would warrant a proper dependency upgrade
   pass beyond this project's scope.
   
+  ## Decision — JWT secret required, no fallback (Review pass)
+
+- **Chose:** `jwt_secret_key: str` with no default in `Settings` — the app
+  fails to start (`pydantic.ValidationError`) if `JWT_SECRET_KEY` isn't set
+  via environment or `.env`.
+- **Rejected:** Keeping the `"dev-secret-change-me"` default.
+- **Why:** A misconfigured deployment missing the env var would otherwise
+  silently sign and accept tokens with a well-known secret instead of
+  failing loudly. Local dev is unaffected — `.env` already sets it
+  explicitly.
+
+## Decision — Auth cookie `Secure` flag driven by environment (Review pass)
+
+- **Chose:** Added `Settings.environment` (`"development"` default /
+  `"production"`) and a computed `is_production` property; `auth.py` sets
+  `secure=settings.is_production` on the login cookie.
+- **Rejected:** Hardcoding `secure=True` (breaks local HTTP dev) or
+  deriving it from `request.url.scheme` (unreliable behind a reverse proxy
+  unless `X-Forwarded-Proto` is explicitly trusted).
+- **Why:** The cookie must never be sent over plain HTTP in production, but
+  must still work locally over `http://localhost`. An explicit environment
+  flag is simpler and more predictable than scheme-sniffing.

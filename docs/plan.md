@@ -42,6 +42,16 @@ model being final.
 
 ## What did you estimate versus what it actually took?
 
+I'd expected roughly 17-18 hours going in. Reconstructed from git commit
+timestamps, actual work spanned from 12:00 on 2026-08-29 to 00:29 the next
+morning — about 12.5 hours of calendar time, under the estimate. Goal-by-
+goal implementation was consistently fast (15-25 minutes per goal, prompt
+to committed and tested code) across all 10 goals. Two stretches account
+for most of the gap between individual goal speed and the overall total: a
+~3h45m period after goal 5 spent on review-pass follow-ups and backfilling
+decisions.md, and a ~3h50m gap before evening deployment work began. The
+estimate undercounted how much time review and documentation discipline
+would take relative to writing the code itself, not the other way around.
 
 
 ## What did you cut when you ran short?
@@ -51,6 +61,7 @@ model being final.
   specifically rather than reacting to the CVSS score alone, then
   deliberately left the rest unfixed, since upgrading independently risked
   breaking the app given FastAPI's version pin — see decisions.md.
+
 - Performance work at scale: SLA breach/at-risk calculations recompute
   per-ticket in a Python loop in three places (alerts, dashboard headline
   counts, CSV export) instead of a single aggregate query; bulk actions
@@ -59,11 +70,13 @@ model being final.
   exist anywhere in the schema. All correct and fine at this data volume —
   see schema.md's "what would break first at 100x the data" — but none of
   it would hold up unchanged at real production scale.
+
 - Product features narrower than a real deployment would need, already
   reasoned about in architecture.md: no self-service registration or
   password reset, no JWT refresh/rotation, no real-time updates between two
   agents on the same ticket, no rate limiting on login, no background job
   or cache for SLA state.
+
 - No literal TODO/FIXME comments anywhere — confirmed by searching the
   codebase directly, not assumed.
 
