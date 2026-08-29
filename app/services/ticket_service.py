@@ -9,6 +9,7 @@ from app.schemas.ticket import TicketCreate, TicketUpdate
 from app.services import permissions
 
 _ACCESS_DENIED_DETAIL = "You can only act on tickets you're assigned to or collaborating on."
+_VIEW_DENIED_DETAIL = "You can only view tickets you're assigned to or collaborating on."
 
 
 def get_ticket_or_404(db: Session, ticket_id: int) -> Ticket:
@@ -18,7 +19,19 @@ def get_ticket_or_404(db: Session, ticket_id: int) -> Ticket:
     return ticket
 
 
-def list_tickets(db: Session, *, archived: bool) -> list[Ticket]:
+def get_viewable_ticket_or_404(db: Session, ticket_id: int, viewer: User) -> Ticket:
+    ticket = get_ticket_or_404(db, ticket_id)
+    if not permissions.can_view_ticket(viewer, ticket):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_VIEW_DENIED_DETAIL)
+    return ticket
+
+
+def list_tickets(db: Session, *, archived: bool, viewer: User) -> list[Ticket]:
+    """The base queue. Per goal 1: supervisors see everything, agents see
+    only tickets where they're primary assignee or a collaborator."""
+    if not permissions.can_view_full_queue(viewer):
+        return list_my_tickets(db, viewer.id, archived=archived)
+
     stmt = (
         select(Ticket)
         .where(Ticket.is_archived == archived)
@@ -62,10 +75,15 @@ def create_ticket(db: Session, data: TicketCreate, actor: User) -> Ticket:
                 detail="Choose an agent to assign this ticket to.",
             )
         assignee_id = data.primary_assignee_id
-    else:
+    elif data.primary_assignee_id is not None and data.primary_assignee_id != actor.id:
         # Agents can never assign a ticket to anyone but themselves, even at
-        # creation -- this is enforced server-side regardless of what's
-        # submitted, consistent with agents never being able to reassign.
+        # creation. Per goal 1, this must be rejected with a clear error,
+        # not silently overridden to self.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Agents can only create tickets assigned to themselves.",
+        )
+    else:
         assignee_id = actor.id
 
     _ensure_valid_assignee(db, assignee_id)

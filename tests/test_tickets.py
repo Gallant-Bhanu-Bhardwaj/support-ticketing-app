@@ -43,15 +43,27 @@ def test_create_as_agent_defaults_to_self_assigned(client, agent_user, login_as,
     assert ticket.primary_assignee_id == agent_user.id
 
 
-def test_create_as_agent_ignores_a_different_submitted_assignee(
+def test_create_as_agent_rejects_a_different_submitted_assignee(
     client, agent_user, second_agent_user, login_as, db_session
 ):
-    """Server-side enforcement: an agent can never assign a ticket to anyone
-    but themselves, even at creation, regardless of what's submitted."""
+    """Per goal 1: an agent's reassignment attempt must be rejected by the
+    server with a clear error, not silently overridden to self."""
+    login_as(agent_user)
+
+    response = client.post(
+        "/tickets", data={**VALID_TICKET, "primary_assignee_id": str(second_agent_user.id)}
+    )
+
+    assert response.status_code == 403
+    assert "agents can only create tickets assigned to themselves" in response.text.lower()
+    assert db_session.query(Ticket).count() == 0
+
+
+def test_create_as_agent_explicitly_choosing_self_succeeds(client, agent_user, login_as, db_session):
     login_as(agent_user)
 
     ticket_id, response = create_ticket(
-        client, data={**VALID_TICKET, "primary_assignee_id": str(second_agent_user.id)}
+        client, data={**VALID_TICKET, "primary_assignee_id": str(agent_user.id)}
     )
 
     assert response.status_code == 303
@@ -255,3 +267,78 @@ def test_supervisor_can_edit_any_ticket(client, agent_user, supervisor_user, log
     response = client.post(f"/tickets/{ticket_id}", data=updated, follow_redirects=False)
 
     assert response.status_code == 303
+
+
+# -- view scoping: goal 1's queue-visibility rule, unenforced since goal 2 --
+
+
+def test_unrelated_agent_cannot_view_ticket_detail(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(second_agent_user)
+    response = client.get(f"/tickets/{ticket_id}")
+
+    assert response.status_code == 403
+
+
+def test_assigned_agent_can_view_ticket_detail(client, agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    response = client.get(f"/tickets/{ticket_id}")
+
+    assert response.status_code == 200
+
+
+def test_collaborator_can_view_ticket_detail(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+    client.post(
+        f"/tickets/{ticket_id}/collaborators",
+        data={"user_id": str(second_agent_user.id)},
+        follow_redirects=False,
+    )
+
+    login_as(second_agent_user)
+    response = client.get(f"/tickets/{ticket_id}")
+
+    assert response.status_code == 200
+
+
+def test_supervisor_can_view_any_ticket_detail(client, agent_user, supervisor_user, login_as):
+    login_as(agent_user)
+    ticket_id, _ = create_ticket(client)
+
+    login_as(supervisor_user)
+    response = client.get(f"/tickets/{ticket_id}")
+
+    assert response.status_code == 200
+
+
+def test_agent_queue_only_shows_their_own_tickets(client, agent_user, second_agent_user, login_as):
+    login_as(agent_user)
+    create_ticket(client, data={**VALID_TICKET, "subject": "Mine"})
+
+    login_as(second_agent_user)
+    create_ticket(client, data={**VALID_TICKET, "subject": "Not mine"})
+
+    login_as(agent_user)
+    response = client.get("/tickets")
+
+    assert "Mine" in response.text
+    assert "Not mine" not in response.text
+
+
+def test_supervisor_queue_shows_every_ticket(client, agent_user, second_agent_user, supervisor_user, login_as):
+    login_as(agent_user)
+    create_ticket(client, data={**VALID_TICKET, "subject": "First agent ticket"})
+
+    login_as(second_agent_user)
+    create_ticket(client, data={**VALID_TICKET, "subject": "Second agent ticket"})
+
+    login_as(supervisor_user)
+    response = client.get("/tickets")
+
+    assert "First agent ticket" in response.text
+    assert "Second agent ticket" in response.text

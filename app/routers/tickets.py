@@ -31,13 +31,13 @@ def _form_choices(db: Session, current_user: User) -> dict:
 
 @router.get("")
 def list_active(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    tickets = ticket_service.list_tickets(db, archived=False)
+    tickets = ticket_service.list_tickets(db, archived=False, viewer=current_user)
     return templates.TemplateResponse(request, "tickets/list.html", {"tickets": tickets})
 
 
 @router.get("/archived")
 def list_archived(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    tickets = ticket_service.list_tickets(db, archived=True)
+    tickets = ticket_service.list_tickets(db, archived=True, viewer=current_user)
     return templates.TemplateResponse(request, "tickets/archived.html", {"tickets": tickets})
 
 
@@ -74,7 +74,7 @@ def detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ticket = ticket_service.get_ticket_or_404(db, ticket_id)
+    ticket = ticket_service.get_viewable_ticket_or_404(db, ticket_id, current_user)
     replies = reply_service.list_replies_for_ticket(db, ticket_id)
     available_agents = collaborator_service.available_agents_for_ticket(db, ticket)
     return templates.TemplateResponse(
