@@ -1,0 +1,43 @@
+<div id="status-actions" class="mb-3">
+    <p class="mb-1">Status: <strong>{{ ticket.status.value }}</strong></p>
+
+    {% if ticket.status.value == "new" %}
+    <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
+        <input type="hidden" name="new_status" value="open">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Mark Open</button>
+    </form>
+
+    {% elif ticket.status.value == "open" %}
+    <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
+        <input type="hidden" name="new_status" value="pending">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Mark Pending</button>
+    </form>
+    <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
+        <input type="hidden" name="new_status" value="resolved">
+        <button type="submit" class="btn btn-sm btn-outline-success">Mark Resolved</button>
+    </form>
+
+    {% elif ticket.status.value == "pending" %}
+    <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
+        <input type="hidden" name="new_status" value="open">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Move back to Open</button>
+    </form>
+    <p class="text-muted small mb-0">Waiting on the customer. This only moves back to Open when someone marks it so -- adding a reply here does not do it automatically.</p>
+
+    {% elif ticket.status.value == "resolved" %}
+    {% if current_user.role.value == "supervisor" %}
+    <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
+        <input type="hidden" name="new_status" value="closed">
+        <button type="submit" class="btn btn-sm btn-outline-dark">Close</button>
+    </form>
+    {% else %}
+    <span class="text-muted small">Only a supervisor can close this ticket.</span>
+    {% endif %}
+
+    {% elif ticket.status.value == "closed" %}
+    <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
+        <input type="hidden" name="new_status" value="open">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Reopen</button>
+    </form>
+    {% endif %}
+</div>

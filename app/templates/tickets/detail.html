@@ -3,14 +3,17 @@
 {% block title %}{{ ticket.subject }} — Support Ticketing{% endblock %}
 
 {% block content %}
+{% if status_error %}
+<div class="alert alert-danger">{{ status_error }}</div>
+{% endif %}
+
 <div class="d-flex justify-content-between align-items-start mb-3">
     <div>
         <h1>{{ ticket.subject }}</h1>
         <p class="text-muted mb-0">
             Requester: {{ ticket.requester }} &middot;
             Priority: {{ ticket.priority.value }} &middot;
-            Category: {{ ticket.category.value }} &middot;
-            Status: {{ ticket.status.value }}
+            Category: {{ ticket.category.value }}
         </p>
     </div>
     <div class="text-end">
@@ -20,6 +23,8 @@
         </div>
     </div>
 </div>
+
+{% include "tickets/partials/status_actions.html" %}
 
 <p>{{ ticket.description }}</p>
 

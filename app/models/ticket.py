@@ -4,10 +4,10 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, String, Text, func
+from sqlalchemy import Boolean, Enum, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.core.database import Base, UTCDateTime
 
 if TYPE_CHECKING:
     from app.models.reply import Reply
@@ -31,9 +31,8 @@ class TicketCategory(str, enum.Enum):
 
 
 class TicketStatus(str, enum.Enum):
-    """Full lifecycle is defined here so the column supports every state up
-    front, but transition rules (goal 4) aren't enforced yet -- this goal
-    only ever sets NEW on create."""
+    """Legal transitions between these are enforced by
+    app.services.lifecycle_service, not by this column definition."""
 
     NEW = "new"
     OPEN = "open"
@@ -64,9 +63,9 @@ class Ticket(Base):
         _string_enum(TicketStatus, 20), nullable=False, default=TicketStatus.NEW
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        UTCDateTime, server_default=func.now(), onupdate=func.now()
     )
 
     replies: Mapped[list["Reply"]] = relationship(
