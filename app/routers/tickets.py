@@ -1,6 +1,8 @@
-from typing import Annotated
+import math
+from typing import Annotated, Literal
+from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -29,10 +31,100 @@ def _form_choices(db: Session, current_user: User) -> dict:
     }
 
 
+def _parse_enum_filter(raw: str | None, enum_cls):
+    """Query params come from a <select> whose reset option is value="" --
+    that must mean "no filter", not a 422 from trying to parse "" as a member."""
+    if not raw:
+        return None
+    try:
+        return enum_cls(raw)
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail=f"'{raw}' is not a valid value for this filter.",
+        )
+
+
+def _parse_int_filter(raw: str | None):
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"'{raw}' is not a valid id.")
+
+
 @router.get("")
-def list_active(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    tickets = ticket_service.list_tickets(db, archived=False, viewer=current_user)
-    return templates.TemplateResponse(request, "tickets/list.html", {"tickets": tickets})
+def list_active(
+    request: Request,
+    q: str | None = None,
+    status: str | None = None,
+    priority: str | None = None,
+    category: str | None = None,
+    assignee_id: str | None = None,
+    sort: Literal["created", "priority", "updated"] = "created",
+    direction: Literal["asc", "desc"] = "desc",
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    status_filter = _parse_enum_filter(status, TicketStatus)
+    priority_filter = _parse_enum_filter(priority, TicketPriority)
+    category_filter = _parse_enum_filter(category, TicketCategory)
+    assignee_filter = _parse_int_filter(assignee_id)
+
+    tickets, total = ticket_service.search_tickets(
+        db,
+        current_user,
+        archived=False,
+        search=q,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        category_filter=category_filter,
+        assignee_id=assignee_filter,
+        sort=sort,
+        direction=direction,
+        page=page,
+        page_size=page_size,
+    )
+    total_pages = max(1, math.ceil(total / page_size))
+
+    base_params = {"sort": sort, "direction": direction, "page_size": page_size}
+    if q:
+        base_params["q"] = q
+    if status_filter:
+        base_params["status"] = status_filter.value
+    if priority_filter:
+        base_params["priority"] = priority_filter.value
+    if category_filter:
+        base_params["category"] = category_filter.value
+    if assignee_filter:
+        base_params["assignee_id"] = assignee_filter
+
+    return templates.TemplateResponse(
+        request,
+        "tickets/list.html",
+        {
+            "tickets": tickets,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "q": q or "",
+            "status": status_filter,
+            "priority": priority_filter,
+            "category": category_filter,
+            "assignee_id": assignee_filter,
+            "sort": sort,
+            "direction": direction,
+            "statuses": list(TicketStatus),
+            "priorities": list(TicketPriority),
+            "categories": list(TicketCategory),
+            "agents": _list_agents(db),
+            "base_query_string": urlencode(base_params),
+        },
+    )
 
 
 @router.get("/archived")

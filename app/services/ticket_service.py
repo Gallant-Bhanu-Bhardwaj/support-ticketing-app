@@ -1,12 +1,30 @@
+from typing import Literal
+
 from fastapi import HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models.ticket import Ticket
+from app.models.ticket import Ticket, TicketCategory, TicketPriority, TicketStatus
 from app.models.ticket_collaborator import TicketCollaborator
 from app.models.user import User, UserRole
 from app.schemas.ticket import TicketCreate, TicketUpdate
 from app.services import permissions
+
+# low/normal/high/urgent are stored as strings; sorting by the column
+# directly would order them alphabetically (high, low, normal, urgent),
+# not by actual severity. This maps each to a rank for real severity order.
+_PRIORITY_RANK = case(
+    (Ticket.priority == TicketPriority.LOW, 1),
+    (Ticket.priority == TicketPriority.NORMAL, 2),
+    (Ticket.priority == TicketPriority.HIGH, 3),
+    (Ticket.priority == TicketPriority.URGENT, 4),
+)
+
+_SORT_COLUMNS = {
+    "created": Ticket.created_at,
+    "updated": Ticket.updated_at,
+    "priority": _PRIORITY_RANK,
+}
 
 _ACCESS_DENIED_DETAIL = "You can only act on tickets you're assigned to or collaborating on."
 _VIEW_DENIED_DETAIL = "You can only view tickets you're assigned to or collaborating on."
@@ -65,6 +83,71 @@ def list_my_tickets(db: Session, user_id: int, *, archived: bool = False) -> lis
         .order_by(Ticket.created_at.desc())
     )
     return list(db.scalars(stmt))
+
+
+def search_tickets(
+    db: Session,
+    viewer: User,
+    *,
+    archived: bool = False,
+    search: str | None = None,
+    status_filter: TicketStatus | None = None,
+    priority_filter: TicketPriority | None = None,
+    category_filter: TicketCategory | None = None,
+    assignee_id: int | None = None,
+    sort: Literal["created", "priority", "updated"] = "created",
+    direction: Literal["asc", "desc"] = "desc",
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[Ticket], int]:
+    """The queue with search/filter/sort/pagination, narrowed within the same
+    viewer scope as list_tickets/list_my_tickets -- supervisors search
+    everything, agents only ever search their own assigned/collaborated
+    tickets, even when a search term would otherwise match someone else's."""
+    conditions = [Ticket.is_archived == archived]
+
+    if not permissions.can_view_full_queue(viewer):
+        conditions.append(
+            or_(
+                Ticket.primary_assignee_id == viewer.id,
+                TicketCollaborator.user_id == viewer.id,
+            )
+        )
+
+    if search:
+        pattern = f"%{search}%"
+        conditions.append(or_(Ticket.subject.ilike(pattern), Ticket.description.ilike(pattern)))
+
+    if status_filter is not None:
+        conditions.append(Ticket.status == status_filter)
+    if priority_filter is not None:
+        conditions.append(Ticket.priority == priority_filter)
+    if category_filter is not None:
+        conditions.append(Ticket.category == category_filter)
+    if assignee_id is not None:
+        conditions.append(Ticket.primary_assignee_id == assignee_id)
+
+    matching_ids = (
+        select(Ticket.id)
+        .outerjoin(TicketCollaborator, TicketCollaborator.ticket_id == Ticket.id)
+        .where(*conditions)
+        .distinct()
+    )
+
+    total = db.scalar(select(func.count()).select_from(matching_ids.subquery())) or 0
+
+    sort_column = _SORT_COLUMNS[sort]
+    order = sort_column.asc() if direction == "asc" else sort_column.desc()
+
+    page_stmt = (
+        select(Ticket)
+        .where(Ticket.id.in_(matching_ids))
+        .order_by(order, Ticket.id.desc())
+        .limit(page_size)
+        .offset((page - 1) * page_size)
+    )
+    tickets = list(db.scalars(page_stmt))
+    return tickets, total
 
 
 def _ensure_valid_assignee(db: Session, assignee_id: int) -> None:
