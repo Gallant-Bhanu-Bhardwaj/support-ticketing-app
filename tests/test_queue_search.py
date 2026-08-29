@@ -121,7 +121,7 @@ def test_assignee_filter_narrows_results(
     assert "Agent2 ticket" not in response.text
 
 
-def test_sort_by_created_date(client, agent_user, login_as, db_session):
+def test_sort_by_created_date_ascending(client, agent_user, login_as, db_session):
     make_ticket(db_session, agent_user, subject="First", created_at=T0)
     make_ticket(db_session, agent_user, subject="Second", created_at=T0 + timedelta(hours=1))
     login_as(agent_user)
@@ -131,7 +131,19 @@ def test_sort_by_created_date(client, agent_user, login_as, db_session):
     assert response.text.index("First") < response.text.index("Second")
 
 
-def test_sort_by_priority_uses_severity_order_not_alphabetical(client, agent_user, login_as, db_session):
+def test_sort_by_created_date_descending(client, agent_user, login_as, db_session):
+    make_ticket(db_session, agent_user, subject="First", created_at=T0)
+    make_ticket(db_session, agent_user, subject="Second", created_at=T0 + timedelta(hours=1))
+    login_as(agent_user)
+
+    response = client.get("/tickets?sort=created&direction=desc")
+
+    assert response.text.index("Second") < response.text.index("First")
+
+
+def test_sort_by_priority_ascending_uses_severity_order_not_alphabetical(
+    client, agent_user, login_as, db_session
+):
     """low/normal/high/urgent are stored as strings -- alphabetically that's
     high, low, normal, urgent, which is not the real severity order."""
     make_ticket(db_session, agent_user, subject="LowOne", priority=TicketPriority.LOW)
@@ -146,7 +158,35 @@ def test_sort_by_priority_uses_severity_order_not_alphabetical(client, agent_use
     assert positions["LowOne"] < positions["NormalOne"] < positions["HighOne"] < positions["UrgentOne"]
 
 
-def test_sort_by_updated_at(client, agent_user, login_as, db_session):
+def test_sort_by_priority_descending_uses_severity_order_not_alphabetical(
+    client, agent_user, login_as, db_session
+):
+    make_ticket(db_session, agent_user, subject="LowOne", priority=TicketPriority.LOW)
+    make_ticket(db_session, agent_user, subject="UrgentOne", priority=TicketPriority.URGENT)
+    make_ticket(db_session, agent_user, subject="NormalOne", priority=TicketPriority.NORMAL)
+    make_ticket(db_session, agent_user, subject="HighOne", priority=TicketPriority.HIGH)
+    login_as(agent_user)
+
+    response = client.get("/tickets?sort=priority&direction=desc")
+
+    positions = {name: response.text.index(name) for name in ["LowOne", "NormalOne", "HighOne", "UrgentOne"]}
+    assert positions["UrgentOne"] < positions["HighOne"] < positions["NormalOne"] < positions["LowOne"]
+
+
+def test_sort_by_updated_at_ascending(client, agent_user, login_as, db_session):
+    older = make_ticket(db_session, agent_user, subject="Updated older")
+    newer = make_ticket(db_session, agent_user, subject="Updated newer")
+    older.updated_at = T0
+    newer.updated_at = T0 + timedelta(hours=2)
+    db_session.commit()
+    login_as(agent_user)
+
+    response = client.get("/tickets?sort=updated&direction=asc")
+
+    assert response.text.index("Updated older") < response.text.index("Updated newer")
+
+
+def test_sort_by_updated_at_descending(client, agent_user, login_as, db_session):
     older = make_ticket(db_session, agent_user, subject="Updated older")
     newer = make_ticket(db_session, agent_user, subject="Updated newer")
     older.updated_at = T0
@@ -157,6 +197,22 @@ def test_sort_by_updated_at(client, agent_user, login_as, db_session):
     response = client.get("/tickets?sort=updated&direction=desc")
 
     assert response.text.index("Updated newer") < response.text.index("Updated older")
+
+
+def test_combined_filters_apply_as_and_not_or(client, agent_user, login_as, db_session):
+    """status=open&priority=high must only match tickets satisfying BOTH --
+    if the filters were OR'd instead, the other two tickets would also show."""
+    make_ticket(db_session, agent_user, subject="Open high", status=TicketStatus.OPEN, priority=TicketPriority.HIGH)
+    make_ticket(db_session, agent_user, subject="Open low", status=TicketStatus.OPEN, priority=TicketPriority.LOW)
+    make_ticket(db_session, agent_user, subject="New high", status=TicketStatus.NEW, priority=TicketPriority.HIGH)
+    login_as(agent_user)
+
+    response = client.get("/tickets?status=open&priority=high")
+
+    assert "Open high" in response.text
+    assert "Open low" not in response.text
+    assert "New high" not in response.text
+    assert "1 matching ticket" in response.text
 
 
 def test_pagination_and_total_count(client, agent_user, login_as, db_session):
@@ -217,3 +273,45 @@ def test_supervisor_search_includes_every_matching_ticket(
 
     assert "Printer jam issue" in response.text
     assert "Printer jam issue too" in response.text
+
+
+def test_total_count_reflects_filtered_query_not_the_unfiltered_queue(
+    client, agent_user, login_as, db_session
+):
+    make_ticket(db_session, agent_user, subject="Match", status=TicketStatus.OPEN)
+    for i in range(3):
+        make_ticket(db_session, agent_user, subject=f"NoMatch {i}", status=TicketStatus.NEW)
+    login_as(agent_user)
+
+    response = client.get("/tickets?status=open")
+
+    assert "1 matching ticket" in response.text
+    assert "Match" in response.text
+
+
+def test_total_count_and_page_count_stay_consistent_under_a_filter(
+    client, agent_user, login_as, db_session
+):
+    """Regression guard: total must come from the same scoped+filtered query
+    as the page of results, not a separately computed count that could
+    drift out of sync with what's actually being paginated."""
+    for i in range(7):
+        make_ticket(
+            db_session,
+            agent_user,
+            subject=f"Filtered {i:02d}",
+            status=TicketStatus.OPEN,
+            created_at=T0 + timedelta(minutes=i),
+        )
+    make_ticket(db_session, agent_user, subject="Excluded", status=TicketStatus.NEW)
+    login_as(agent_user)
+
+    response = client.get("/tickets?status=open&page=1&page_size=3&sort=created&direction=asc")
+
+    assert "7 matching" in response.text
+    assert "Page 1 of 3" in response.text
+    assert "Excluded" not in response.text
+    for i in range(3):
+        assert f"Filtered {i:02d}" in response.text
+    for i in range(3, 7):
+        assert f"Filtered {i:02d}" not in response.text
