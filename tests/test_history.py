@@ -1,4 +1,5 @@
 from app.main import app
+from app.models.reply import Reply
 from app.models.ticket import TicketStatus
 from app.models.ticket_history import TicketHistoryEvent, TicketHistoryEventType
 
@@ -133,13 +134,46 @@ def test_reply_creates_correct_history_row_referencing_the_reply(
         follow_redirects=False,
     )
 
+    reply = db_session.query(Reply).filter_by(ticket_id=ticket_id).one()
+
     event = db_session.query(TicketHistoryEvent).filter_by(
         ticket_id=ticket_id, event_type=TicketHistoryEventType.REPLY
     ).one()
     assert event.actor_id == agent_user.id
-    assert event.reply is not None
+    # the FK itself, not just the relationship traversal -- a wrong
+    # reply_id pointing at some other row could still satisfy
+    # event.reply.body/.is_internal checks by coincidence if the test data
+    # were less careful, but not this direct comparison against the
+    # independently-queried Reply row's own id.
+    assert event.reply_id == reply.id
     assert event.reply.body == "Looking into this."
     assert event.reply.is_internal is True
+
+
+def test_each_reply_history_row_links_to_its_own_reply_not_another(
+    client, agent_user, login_as, db_session
+):
+    """With only one reply on the ticket, a history row could point at
+    the wrong reply_id (e.g. always the first one ever created) and still
+    pass by coincidence. Two replies rule that out."""
+    ticket_id = create_ticket(client, login_as, agent_user)
+
+    client.post(f"/tickets/{ticket_id}/replies", data={"body": "First reply."}, follow_redirects=False)
+    client.post(f"/tickets/{ticket_id}/replies", data={"body": "Second reply."}, follow_redirects=False)
+
+    first_reply = db_session.query(Reply).filter_by(body="First reply.").one()
+    second_reply = db_session.query(Reply).filter_by(body="Second reply.").one()
+
+    events = (
+        db_session.query(TicketHistoryEvent)
+        .filter_by(ticket_id=ticket_id, event_type=TicketHistoryEventType.REPLY)
+        .order_by(TicketHistoryEvent.id)
+        .all()
+    )
+    assert len(events) == 2
+    assert events[0].reply_id == first_reply.id
+    assert events[1].reply_id == second_reply.id
+    assert events[0].reply_id != events[1].reply_id
 
 
 # -- unified timeline rendering --------------------------------------------
