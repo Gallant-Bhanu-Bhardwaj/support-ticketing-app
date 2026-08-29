@@ -141,7 +141,7 @@ def test_elapsed_for_ticket_with_multiple_closed_cycles(db_session, agent_user, 
     )
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.OPEN, supervisor_user, now=T0 + timedelta(hours=5)
-    )  # closed #1: 3h excluded
+    )  # closed #1: 3h excluded (T0+2h -> T0+5h); resolved #1: 1h excluded (T0+1h -> T0+2h)
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.RESOLVED, agent_user, now=T0 + timedelta(hours=6)
     )
@@ -150,12 +150,13 @@ def test_elapsed_for_ticket_with_multiple_closed_cycles(db_session, agent_user, 
     )
     lifecycle_service.transition(
         db_session, ticket, TicketStatus.OPEN, supervisor_user, now=T0 + timedelta(hours=9)
-    )  # closed #2: 2h excluded
+    )  # closed #2: 2h excluded (T0+7h -> T0+9h); resolved #2: 1h excluded (T0+6h -> T0+7h)
 
     as_of = T0 + timedelta(hours=10)
     elapsed = sla_service.elapsed_response_time_for_ticket(db_session, ticket, as_of=as_of)
 
-    assert elapsed == timedelta(hours=5)  # 10h wall clock minus (3h + 2h) closed
+    # 10h wall clock minus (3h + 2h) closed minus (1h + 1h) resolved-but-not-yet-closed
+    assert elapsed == timedelta(hours=3)
 
 
 def test_elapsed_for_ticket_reflects_real_lifecycle_transitions(db_session, agent_user):
@@ -181,3 +182,70 @@ def test_elapsed_for_ticket_reflects_real_lifecycle_transitions(db_session, agen
 def test_target_response_time_covers_every_priority():
     for priority in TicketPriority:
         assert priority in sla_service.TARGET_RESPONSE_TIME
+
+
+def test_elapsed_excludes_time_spent_resolved_but_not_yet_closed():
+    """A ticket resolved quickly but left sitting in Resolved for a long
+    stretch before anyone gets around to closing it must not show inflated
+    elapsed time -- the customer already had a fast response the moment it
+    was resolved; sitting unclosed is an administrative delay, not the
+    customer still waiting."""
+    resolved_periods = [(T0 + timedelta(minutes=30), T0 + timedelta(days=10))]
+    as_of = T0 + timedelta(days=10)  # right when it's closed, ending the resolved period
+
+    elapsed = elapsed_response_time(T0, [], [], as_of, resolved_periods)
+
+    assert elapsed == timedelta(minutes=30)
+
+
+def test_elapsed_freezes_while_still_sitting_in_resolved_unclosed():
+    """The open-ended case: never closed at all. Elapsed must stay frozen
+    at the moment of resolution, not keep growing while it sits there."""
+    resolved_periods = [(T0 + timedelta(minutes=30), None)]
+    as_of = T0 + timedelta(days=30)  # long after resolution, still unclosed
+
+    elapsed = elapsed_response_time(T0, [], [], as_of, resolved_periods)
+
+    assert elapsed == timedelta(minutes=30)
+
+
+def test_elapsed_for_ticket_resolved_quickly_then_left_unclosed_a_long_time(
+    db_session, agent_user
+):
+    """Integration version of the same scenario, driven through a real
+    OPEN -> RESOLVED transition rather than a hand-built period list."""
+    ticket = make_ticket(db_session, agent_user)
+
+    lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
+    lifecycle_service.transition(
+        db_session, ticket, TicketStatus.RESOLVED, agent_user, now=T0 + timedelta(minutes=30)
+    )
+
+    as_of = T0 + timedelta(days=10)  # sat in Resolved, unclosed, for 10 days
+    elapsed = sla_service.elapsed_response_time_for_ticket(db_session, ticket, as_of=as_of)
+
+    assert elapsed == timedelta(minutes=30)
+
+
+def test_elapsed_for_ticket_resolved_fast_sits_a_while_then_closed_then_reopened(
+    db_session, agent_user, supervisor_user
+):
+    """The exact scenario from the review: fast resolution, a long
+    unclosed stretch, then closed, then reopened. Elapsed on reopen must
+    reflect only the real active time (30 minutes), not the 10-day wait to
+    be closed nor the closed period itself."""
+    ticket = make_ticket(db_session, agent_user)
+
+    lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, agent_user, now=T0)
+    lifecycle_service.transition(
+        db_session, ticket, TicketStatus.RESOLVED, agent_user, now=T0 + timedelta(minutes=30)
+    )
+    close_time = T0 + timedelta(days=10)  # sat unclosed for 10 days
+    lifecycle_service.transition(db_session, ticket, TicketStatus.CLOSED, supervisor_user, now=close_time)
+    reopen_time = close_time + timedelta(hours=2)  # closed for 2 hours
+    lifecycle_service.transition(db_session, ticket, TicketStatus.OPEN, supervisor_user, now=reopen_time)
+
+    as_of = reopen_time + timedelta(minutes=5)
+    elapsed = sla_service.elapsed_response_time_for_ticket(db_session, ticket, as_of=as_of)
+
+    assert elapsed == timedelta(minutes=35)  # 30 min (real work) + 5 min since reopening

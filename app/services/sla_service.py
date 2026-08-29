@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.ticket import Ticket, TicketPriority, TicketStatus
-from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod
+from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod, TicketResolvedPeriod
 
 # Documented in docs/decisions.md.
 TARGET_RESPONSE_TIME: dict[TicketPriority, timedelta] = {
@@ -34,11 +34,15 @@ def elapsed_response_time(
     pending_periods: list[tuple[datetime, datetime | None]],
     closed_periods: list[tuple[datetime, datetime | None]],
     as_of: datetime,
+    resolved_periods: list[tuple[datetime, datetime | None]] = (),
 ) -> timedelta:
     """Time actually counted against the response-time SLA: wall-clock time
     since creation, minus every stretch spent in Pending (waiting on the
-    customer) or Closed (done, then reopened) -- both excluded the same way,
-    from a log of periods rather than a paused-in-memory timer."""
+    customer), Closed (done, then reopened), or Resolved (also done -- the
+    customer already has their response, whether or not anyone has gotten
+    around to the administrative step of closing the ticket yet) -- all
+    excluded the same way, from a log of periods rather than a
+    paused-in-memory timer."""
     total = as_of - created_at
 
     for started_at, ended_at in pending_periods:
@@ -46,6 +50,9 @@ def elapsed_response_time(
 
     for closed_at, reopened_at in closed_periods:
         total -= _excluded_duration(closed_at, reopened_at, as_of)
+
+    for resolved_at, unresolved_at in resolved_periods:
+        total -= _excluded_duration(resolved_at, unresolved_at, as_of)
 
     return max(total, timedelta(0))
 
@@ -67,5 +74,11 @@ def elapsed_response_time_for_ticket(
             select(TicketClosedPeriod).where(TicketClosedPeriod.ticket_id == ticket.id)
         )
     ]
+    resolved_periods = [
+        (period.started_at, period.ended_at)
+        for period in db.scalars(
+            select(TicketResolvedPeriod).where(TicketResolvedPeriod.ticket_id == ticket.id)
+        )
+    ]
 
-    return elapsed_response_time(ticket.created_at, pending_periods, closed_periods, as_of)
+    return elapsed_response_time(ticket.created_at, pending_periods, closed_periods, as_of, resolved_periods)

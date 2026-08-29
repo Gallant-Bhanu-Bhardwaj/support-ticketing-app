@@ -3,7 +3,7 @@ from app.models.sla_acknowledgement import SlaAcknowledgement
 from app.models.ticket import Ticket, TicketCategory, TicketPriority, TicketStatus
 from app.models.ticket_collaborator import TicketCollaborator
 from app.models.ticket_history import TicketHistoryEvent, TicketHistoryEventType
-from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod
+from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod, TicketResolvedPeriod
 from app.models.user import User, UserRole
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     "Reply",
     "TicketPendingPeriod",
     "TicketClosedPeriod",
+    "TicketResolvedPeriod",
     "TicketCollaborator",
     "TicketHistoryEvent",
     "TicketHistoryEventType",

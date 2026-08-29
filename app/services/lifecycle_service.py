@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.ticket import Ticket, TicketStatus
-from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod
+from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod, TicketResolvedPeriod
 from app.models.user import User
 from app.services import history_service, permissions
 
@@ -58,6 +58,14 @@ def transition(
                 detail="Only a supervisor can close a ticket.",
             )
         db.add(TicketClosedPeriod(ticket_id=ticket.id, closed_at=now))
+        resolved_period = db.scalars(
+            select(TicketResolvedPeriod)
+            .where(
+                TicketResolvedPeriod.ticket_id == ticket.id,
+                TicketResolvedPeriod.ended_at.is_(None),
+            )
+        ).one()
+        resolved_period.ended_at = now
 
     if current == TicketStatus.CLOSED and new_status == TicketStatus.OPEN:
         closed_period = db.scalars(
@@ -94,6 +102,7 @@ def transition(
         # Overwritten on each re-resolution (after a Closed -> Open ->
         # ... -> Resolved cycle) so it always reflects the most recent one.
         ticket.resolved_at = now
+        db.add(TicketResolvedPeriod(ticket_id=ticket.id, started_at=now))
 
     history_service.record_status_change(db, ticket, current, new_status, actor)
 
