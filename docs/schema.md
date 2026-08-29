@@ -204,8 +204,9 @@ about, since it's easy to assume otherwise:**
 ## What would break first at 100x the data
 
 The SLA/breach calculations are the first thing that would need to change.
-`alerts_service.list_alerts` and `dashboard_service.headline_counts` both
-fetch every active ticket in the viewer's scope and call
+`alerts_service.list_alerts`, `dashboard_service.headline_counts`, and
+`export_service`'s CSV `breach_status` column (computed once per exported
+row) all fetch every active ticket in the viewer's scope and call
 `elapsed_response_time_for_ticket` on each one in a Python loop — and that
 function itself issues two more queries per ticket (its pending and closed
 periods; three once resolved periods are included). At current demo-data
