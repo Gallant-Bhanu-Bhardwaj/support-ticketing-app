@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.ticket import Ticket, TicketStatus
 from app.models.ticket_period import TicketClosedPeriod, TicketPendingPeriod
 from app.models.user import User
-from app.services import permissions
+from app.services import history_service, permissions
 
 REOPEN_WINDOW = timedelta(days=7)
 
@@ -94,6 +94,8 @@ def transition(
         # Overwritten on each re-resolution (after a Closed -> Open ->
         # ... -> Resolved cycle) so it always reflects the most recent one.
         ticket.resolved_at = now
+
+    history_service.record_status_change(db, ticket, current, new_status, actor)
 
     ticket.status = new_status
     db.commit()

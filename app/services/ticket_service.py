@@ -8,7 +8,7 @@ from app.models.ticket import Ticket, TicketCategory, TicketPriority, TicketStat
 from app.models.ticket_collaborator import TicketCollaborator
 from app.models.user import User, UserRole
 from app.schemas.ticket import TicketCreate, TicketUpdate
-from app.services import permissions
+from app.services import history_service, permissions
 
 # low/normal/high/urgent are stored as strings; sorting by the column
 # directly would order them alphabetically (high, low, normal, urgent),
@@ -264,6 +264,7 @@ def _apply_reassignment(db: Session, ticket: Ticket, new_assignee_id: int, actor
             detail="Only a supervisor can reassign a ticket.",
         )
     ensure_valid_assignee(db, new_assignee_id)
+    history_service.record_reassignment(db, ticket, ticket.primary_assignee_id, new_assignee_id, actor)
     ticket.primary_assignee_id = new_assignee_id
 
 

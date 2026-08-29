@@ -17,8 +17,8 @@ from app.services import (
     bulk_service,
     collaborator_service,
     export_service,
+    history_service,
     lifecycle_service,
-    reply_service,
     ticket_service,
 )
 
@@ -255,14 +255,14 @@ def detail(
     current_user: User = Depends(get_current_user),
 ):
     ticket = ticket_service.get_viewable_ticket_or_404(db, ticket_id, current_user)
-    replies = reply_service.list_replies_for_ticket(db, ticket_id)
+    timeline = history_service.list_timeline(db, ticket_id)
     available_agents = collaborator_service.available_agents_for_ticket(db, ticket)
     return templates.TemplateResponse(
         request,
         "tickets/detail.html",
         {
             "ticket": ticket,
-            "replies": replies,
+            "timeline": timeline,
             "current_user": current_user,
             "available_agents": available_agents,
         },
@@ -307,14 +307,14 @@ def change_status(
     try:
         lifecycle_service.transition(db, ticket, new_status, current_user)
     except HTTPException as exc:
-        replies = reply_service.list_replies_for_ticket(db, ticket_id)
+        timeline = history_service.list_timeline(db, ticket_id)
         available_agents = collaborator_service.available_agents_for_ticket(db, ticket)
         return templates.TemplateResponse(
             request,
             "tickets/detail.html",
             {
                 "ticket": ticket,
-                "replies": replies,
+                "timeline": timeline,
                 "current_user": current_user,
                 "available_agents": available_agents,
                 "status_error": exc.detail,

@@ -58,23 +58,38 @@
 
 <hr>
 
-<h2>Replies</h2>
+<h2>Timeline</h2>
+<p class="text-muted small">Every status change, reassignment, and reply, in order. Nothing here can be edited or deleted after the fact.</p>
 <ul class="list-unstyled">
-    {% for reply in replies %}
-    <li class="mb-3 p-3 rounded border {{ 'bg-warning-subtle' if reply.is_internal else 'bg-body-secondary' }}">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <strong>{{ reply.author.email }}</strong>
-            <span class="text-muted small">{{ reply.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
-        </div>
-        {% if reply.is_internal %}
-        <span class="badge text-bg-warning mb-2">Internal note</span>
-        {% else %}
-        <span class="badge text-bg-primary mb-2">Customer-visible</span>
+    {% for event in timeline %}
+        {% if event.event_type.value == "reply" %}
+        <li class="mb-3 p-3 rounded border {{ 'bg-warning-subtle' if event.reply.is_internal else 'bg-body-secondary' }}">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong>{{ event.reply.author.email }}</strong>
+                <span class="text-muted small">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+            </div>
+            {% if event.reply.is_internal %}
+            <span class="badge text-bg-warning mb-2">Internal note</span>
+            {% else %}
+            <span class="badge text-bg-primary mb-2">Customer-visible</span>
+            {% endif %}
+            <p class="mb-0">{{ event.reply.body }}</p>
+        </li>
+        {% elif event.event_type.value == "status_change" %}
+        <li class="mb-2 text-muted small">
+            {{ event.created_at.strftime("%Y-%m-%d %H:%M") }} &mdash;
+            {{ event.actor.email }} changed status from
+            <strong>{{ event.old_status.value }}</strong> to <strong>{{ event.new_status.value }}</strong>
+        </li>
+        {% elif event.event_type.value == "reassignment" %}
+        <li class="mb-2 text-muted small">
+            {{ event.created_at.strftime("%Y-%m-%d %H:%M") }} &mdash;
+            {{ event.actor.email }} reassigned this ticket from
+            <strong>{{ event.old_assignee.email }}</strong> to <strong>{{ event.new_assignee.email }}</strong>
+        </li>
         {% endif %}
-        <p class="mb-0">{{ reply.body }}</p>
-    </li>
     {% else %}
-    <li class="text-muted">No replies yet.</li>
+    <li class="text-muted">No history yet.</li>
     {% endfor %}
 </ul>
 

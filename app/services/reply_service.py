@@ -6,7 +6,7 @@ from app.models.reply import Reply
 from app.models.ticket import Ticket
 from app.models.user import User
 from app.schemas.reply import ReplyCreate
-from app.services import permissions
+from app.services import history_service, permissions
 
 
 def list_replies_for_ticket(db: Session, ticket_id: int) -> list[Reply]:
@@ -32,6 +32,8 @@ def add_reply(db: Session, ticket: Ticket, author: User, data: ReplyCreate) -> R
         is_internal=data.is_internal,
     )
     db.add(reply)
+    db.flush()  # assigns reply.id, needed by the history row referencing it
+    history_service.record_reply(db, ticket, reply, author)
     db.commit()
     db.refresh(reply)
     return reply
