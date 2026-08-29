@@ -2,7 +2,7 @@ import math
 from typing import Annotated, Literal
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,7 +13,14 @@ from app.core.templates import templates
 from app.models.ticket import TicketCategory, TicketPriority, TicketStatus
 from app.models.user import User, UserRole
 from app.schemas.ticket import TicketCreate, TicketUpdate
-from app.services import collaborator_service, lifecycle_service, reply_service, ticket_service
+from app.services import (
+    bulk_service,
+    collaborator_service,
+    export_service,
+    lifecycle_service,
+    reply_service,
+    ticket_service,
+)
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -54,6 +61,15 @@ def _parse_int_filter(raw: str | None):
         raise HTTPException(status_code=422, detail=f"'{raw}' is not a valid id.")
 
 
+def _parse_filters(status: str | None, priority: str | None, category: str | None, assignee_id: str | None):
+    return (
+        _parse_enum_filter(status, TicketStatus),
+        _parse_enum_filter(priority, TicketPriority),
+        _parse_enum_filter(category, TicketCategory),
+        _parse_int_filter(assignee_id),
+    )
+
+
 @router.get("")
 def list_active(
     request: Request,
@@ -69,10 +85,9 @@ def list_active(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    status_filter = _parse_enum_filter(status, TicketStatus)
-    priority_filter = _parse_enum_filter(priority, TicketPriority)
-    category_filter = _parse_enum_filter(category, TicketCategory)
-    assignee_filter = _parse_int_filter(assignee_id)
+    status_filter, priority_filter, category_filter, assignee_filter = _parse_filters(
+        status, priority, category, assignee_id
+    )
 
     tickets, total = ticket_service.search_tickets(
         db,
@@ -107,6 +122,7 @@ def list_active(
         "tickets/list.html",
         {
             "tickets": tickets,
+            "current_user": current_user,
             "total": total,
             "page": page,
             "page_size": page_size,
@@ -124,6 +140,78 @@ def list_active(
             "agents": _list_agents(db),
             "base_query_string": urlencode(base_params),
         },
+    )
+
+
+@router.get("/export.csv")
+def export_csv(
+    q: str | None = None,
+    status: str | None = None,
+    priority: str | None = None,
+    category: str | None = None,
+    assignee_id: str | None = None,
+    sort: Literal["created", "priority", "updated"] = "created",
+    direction: Literal["asc", "desc"] = "desc",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Exports every ticket matching the current filters, not just the
+    visible page -- reuses ticket_service's filter/scope logic directly
+    rather than re-deriving it here."""
+    status_filter, priority_filter, category_filter, assignee_filter = _parse_filters(
+        status, priority, category, assignee_id
+    )
+
+    tickets = ticket_service.all_matching_tickets(
+        db,
+        current_user,
+        archived=False,
+        search=q,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        category_filter=category_filter,
+        assignee_id=assignee_filter,
+        sort=sort,
+        direction=direction,
+    )
+    csv_content = export_service.tickets_to_csv(tickets)
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=tickets.csv"},
+    )
+
+
+@router.post("/bulk/reassign")
+def bulk_reassign(
+    request: Request,
+    new_assignee_id: Annotated[int, Form()],
+    ticket_ids: Annotated[list[int], Form()] = [],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not ticket_ids:
+        raise HTTPException(status_code=400, detail="Select at least one ticket.")
+
+    results = bulk_service.bulk_reassign(db, ticket_ids, new_assignee_id, current_user)
+    return templates.TemplateResponse(
+        request, "tickets/bulk_result.html", {"action": "Reassign", "results": results}
+    )
+
+
+@router.post("/bulk/close")
+def bulk_close(
+    request: Request,
+    ticket_ids: Annotated[list[int], Form()] = [],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not ticket_ids:
+        raise HTTPException(status_code=400, detail="Select at least one ticket.")
+
+    results = bulk_service.bulk_close(db, ticket_ids, current_user)
+    return templates.TemplateResponse(
+        request, "tickets/bulk_result.html", {"action": "Close", "results": results}
     )
 
 

@@ -85,25 +85,19 @@ def list_my_tickets(db: Session, user_id: int, *, archived: bool = False) -> lis
     return list(db.scalars(stmt))
 
 
-def search_tickets(
-    db: Session,
+def _matching_ticket_ids(
     viewer: User,
     *,
-    archived: bool = False,
-    search: str | None = None,
-    status_filter: TicketStatus | None = None,
-    priority_filter: TicketPriority | None = None,
-    category_filter: TicketCategory | None = None,
-    assignee_id: int | None = None,
-    sort: Literal["created", "priority", "updated"] = "created",
-    direction: Literal["asc", "desc"] = "desc",
-    page: int = 1,
-    page_size: int = 20,
-) -> tuple[list[Ticket], int]:
-    """The queue with search/filter/sort/pagination, narrowed within the same
-    viewer scope as list_tickets/list_my_tickets -- supervisors search
-    everything, agents only ever search their own assigned/collaborated
-    tickets, even when a search term would otherwise match someone else's."""
+    archived: bool,
+    search: str | None,
+    status_filter: TicketStatus | None,
+    priority_filter: TicketPriority | None,
+    category_filter: TicketCategory | None,
+    assignee_id: int | None,
+):
+    """The scoped+filtered id subquery shared by search_tickets (paginated,
+    for the queue page) and all_matching_tickets (unpaginated, for CSV
+    export) -- one place filter/scope logic lives, not two."""
     conditions = [Ticket.is_archived == archived]
 
     if not permissions.can_view_full_queue(viewer):
@@ -127,11 +121,41 @@ def search_tickets(
     if assignee_id is not None:
         conditions.append(Ticket.primary_assignee_id == assignee_id)
 
-    matching_ids = (
+    return (
         select(Ticket.id)
         .outerjoin(TicketCollaborator, TicketCollaborator.ticket_id == Ticket.id)
         .where(*conditions)
         .distinct()
+    )
+
+
+def search_tickets(
+    db: Session,
+    viewer: User,
+    *,
+    archived: bool = False,
+    search: str | None = None,
+    status_filter: TicketStatus | None = None,
+    priority_filter: TicketPriority | None = None,
+    category_filter: TicketCategory | None = None,
+    assignee_id: int | None = None,
+    sort: Literal["created", "priority", "updated"] = "created",
+    direction: Literal["asc", "desc"] = "desc",
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[Ticket], int]:
+    """The queue with search/filter/sort/pagination, narrowed within the same
+    viewer scope as list_tickets/list_my_tickets -- supervisors search
+    everything, agents only ever search their own assigned/collaborated
+    tickets, even when a search term would otherwise match someone else's."""
+    matching_ids = _matching_ticket_ids(
+        viewer,
+        archived=archived,
+        search=search,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        category_filter=category_filter,
+        assignee_id=assignee_id,
     )
 
     total = db.scalar(select(func.count()).select_from(matching_ids.subquery())) or 0
@@ -150,7 +174,40 @@ def search_tickets(
     return tickets, total
 
 
-def _ensure_valid_assignee(db: Session, assignee_id: int) -> None:
+def all_matching_tickets(
+    db: Session,
+    viewer: User,
+    *,
+    archived: bool = False,
+    search: str | None = None,
+    status_filter: TicketStatus | None = None,
+    priority_filter: TicketPriority | None = None,
+    category_filter: TicketCategory | None = None,
+    assignee_id: int | None = None,
+    sort: Literal["created", "priority", "updated"] = "created",
+    direction: Literal["asc", "desc"] = "desc",
+) -> list[Ticket]:
+    """Every ticket matching the same scope+filters as search_tickets, with
+    no pagination -- for CSV export of the current filtered view, which
+    must reflect the whole filtered set, not just the visible page."""
+    matching_ids = _matching_ticket_ids(
+        viewer,
+        archived=archived,
+        search=search,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        category_filter=category_filter,
+        assignee_id=assignee_id,
+    )
+
+    sort_column = _SORT_COLUMNS[sort]
+    order = sort_column.asc() if direction == "asc" else sort_column.desc()
+
+    stmt = select(Ticket).where(Ticket.id.in_(matching_ids)).order_by(order, Ticket.id.desc())
+    return list(db.scalars(stmt))
+
+
+def ensure_valid_assignee(db: Session, assignee_id: int) -> None:
     assignee = db.get(User, assignee_id)
     if assignee is None or assignee.role != UserRole.AGENT:
         raise HTTPException(
@@ -178,7 +235,7 @@ def create_ticket(db: Session, data: TicketCreate, actor: User) -> Ticket:
     else:
         assignee_id = actor.id
 
-    _ensure_valid_assignee(db, assignee_id)
+    ensure_valid_assignee(db, assignee_id)
 
     ticket = Ticket(
         subject=data.subject,
@@ -194,24 +251,45 @@ def create_ticket(db: Session, data: TicketCreate, actor: User) -> Ticket:
     return ticket
 
 
+def _apply_reassignment(db: Session, ticket: Ticket, new_assignee_id: int, actor: User) -> None:
+    """Mutates ticket.primary_assignee_id in place if permitted; does not
+    commit. Shared by update_ticket and reassign_ticket (bulk's per-ticket
+    path) so both go through the exact same check, not two copies of it."""
+    if new_assignee_id == ticket.primary_assignee_id:
+        return
+    if not permissions.can_reassign_ticket(actor, ticket, new_assignee_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a supervisor can reassign a ticket.",
+        )
+    ensure_valid_assignee(db, new_assignee_id)
+    ticket.primary_assignee_id = new_assignee_id
+
+
 def update_ticket(db: Session, ticket: Ticket, data: TicketUpdate, actor: User) -> Ticket:
     if not permissions.can_act_on_ticket(actor, ticket):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_ACCESS_DENIED_DETAIL)
 
-    if data.primary_assignee_id != ticket.primary_assignee_id:
-        if not permissions.can_reassign_ticket(actor, ticket, data.primary_assignee_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only a supervisor can reassign a ticket.",
-            )
-        _ensure_valid_assignee(db, data.primary_assignee_id)
-        ticket.primary_assignee_id = data.primary_assignee_id
+    _apply_reassignment(db, ticket, data.primary_assignee_id, actor)
 
     ticket.subject = data.subject
     ticket.description = data.description
     ticket.requester = data.requester
     ticket.priority = data.priority
     ticket.category = data.category
+    db.commit()
+    db.refresh(ticket)
+    return ticket
+
+
+def reassign_ticket(db: Session, ticket: Ticket, new_assignee_id: int, actor: User) -> Ticket:
+    """Used by bulk reassign: the exact same per-ticket authorization checks
+    as update_ticket's reassignment path (can_act_on_ticket, then
+    can_reassign_ticket), just without the rest of TicketUpdate's fields."""
+    if not permissions.can_act_on_ticket(actor, ticket):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_ACCESS_DENIED_DETAIL)
+
+    _apply_reassignment(db, ticket, new_assignee_id, actor)
     db.commit()
     db.refresh(ticket)
     return ticket

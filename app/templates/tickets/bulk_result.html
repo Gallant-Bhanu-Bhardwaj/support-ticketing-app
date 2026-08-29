@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk {{ action }} results — Support Ticketing{% endblock %}
+
+{% block content %}
+<h1>Bulk {{ action }} results</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Ticket</th>
+            <th>Result</th>
+            <th>Detail</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in results %}
+        <tr class="{{ 'table-success' if result.success else 'table-danger' }}">
+            <td>
+                {% if result.success %}
+                <a href="/tickets/{{ result.ticket_id }}">#{{ result.ticket_id }} {{ result.subject }}</a>
+                {% else %}
+                #{{ result.ticket_id }} {{ result.subject }}
+                {% endif %}
+            </td>
+            <td>{{ "Succeeded" if result.success else "Refused" }}</td>
+            <td>{{ result.detail }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p>{{ results | selectattr("success") | list | length }} succeeded, {{ results | rejectattr("success") | list | length }} refused.</p>
+
+<a href="/tickets" class="btn btn-link">Back to tickets</a>
+{% endblock %}

@@ -8,6 +8,7 @@
     <div>
         <a href="/tickets/mine" class="btn btn-outline-secondary btn-sm">My tickets</a>
         <a href="/tickets/archived" class="btn btn-outline-secondary btn-sm">View archived</a>
+        <a href="/tickets/export.csv?{{ base_query_string }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
         <a href="/tickets/new" class="btn btn-primary btn-sm">New ticket</a>
     </div>
 </div>
@@ -69,9 +70,31 @@
 
 <p class="text-muted">{{ total }} matching ticket{{ "s" if total != 1 else "" }}</p>
 
+{% set is_supervisor = current_user.role.value == "supervisor" %}
+
+<form method="post" id="bulk-form">
+{% if is_supervisor %}
+<div class="d-flex align-items-center gap-2 mb-2">
+    <select name="new_assignee_id" class="form-select form-select-sm w-auto">
+        {% for agent in agents %}
+        <option value="{{ agent.id }}">{{ agent.email }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" formaction="/tickets/bulk/reassign" class="btn btn-sm btn-outline-primary">
+        Reassign selected
+    </button>
+    <button type="submit" formaction="/tickets/bulk/close" class="btn btn-sm btn-outline-dark">
+        Close selected
+    </button>
+</div>
+{% endif %}
+
 <table class="table table-hover align-middle">
     <thead>
         <tr>
+            {% if is_supervisor %}
+            <th><input type="checkbox" id="select-all-tickets"></th>
+            {% endif %}
             <th>Subject</th>
             <th>Requester</th>
             <th>Assignee</th>
@@ -85,6 +108,9 @@
     <tbody>
         {% for ticket in tickets %}
         <tr id="ticket-row-{{ ticket.id }}">
+            {% if is_supervisor %}
+            <td><input type="checkbox" name="ticket_ids" value="{{ ticket.id }}" class="ticket-checkbox"></td>
+            {% endif %}
             <td><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
             <td>{{ ticket.requester }}</td>
             <td>{{ ticket.primary_assignee.email }}</td>
@@ -94,6 +120,7 @@
             <td>{{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
             <td>
                 <button
+                    type="button"
                     class="btn btn-sm btn-outline-danger"
                     hx-post="/tickets/{{ ticket.id }}/archive?render=none"
                     hx-target="#ticket-row-{{ ticket.id }}"
@@ -102,10 +129,21 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" class="text-muted">No tickets match these filters.</td></tr>
+        <tr><td colspan="{{ 9 if is_supervisor else 8 }}" class="text-muted">No tickets match these filters.</td></tr>
         {% endfor %}
     </tbody>
 </table>
+</form>
+
+{% if is_supervisor %}
+<script>
+    document.getElementById("select-all-tickets").addEventListener("change", function () {
+        document.querySelectorAll(".ticket-checkbox").forEach(function (box) {
+            box.checked = this.checked;
+        }.bind(this));
+    });
+</script>
+{% endif %}
 
 <nav aria-label="Ticket pages">
     <ul class="pagination">
