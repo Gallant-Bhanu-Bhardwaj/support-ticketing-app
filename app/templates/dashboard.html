@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Support Ticketing{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dashboard</h1>
+    <span class="text-muted">Signed in as {{ current_user.email }} ({{ current_user.role.value }})</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-2">Open</h6>
+                <p class="card-text fs-2 mb-0">{{ headlines.open }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-2">Pending on customer</h6>
+                <p class="card-text fs-2 mb-0">{{ headlines.pending }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-2">Resolved this week</h6>
+                <p class="card-text fs-2 mb-0">{{ headlines.resolved_this_week }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-danger">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-2">Breaching SLA</h6>
+                <p class="card-text fs-2 mb-0 text-danger">{{ headlines.breaching }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <h2 class="h5">By status</h2>
+        <table class="table table-sm">
+            <tbody>
+                {% for row in status_breakdown %}
+                <tr><td>{{ row.status.value }}</td><td>{{ row.count }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if agent_breakdown is not none %}
+    <div class="col-md-4">
+        <h2 class="h5">By agent</h2>
+        <table class="table table-sm">
+            <tbody>
+                {% for row in agent_breakdown %}
+                <tr><td>{{ row.agent }}</td><td>{{ row.count }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="col-md-4">
+        <h2 class="h5">Resolved per week</h2>
+        <canvas id="resolved-chart" height="200"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    fetch("/dashboard/chart-data")
+        .then(function (response) { return response.json(); })
+        .then(function (weeks) {
+            new Chart(document.getElementById("resolved-chart"), {
+                type: "bar",
+                data: {
+                    labels: weeks.map(function (week) { return week.week_start; }),
+                    datasets: [{ label: "Resolved", data: weeks.map(function (week) { return week.count; }) }],
+                },
+                options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+            });
+        });
+</script>
+{% endblock %}

@@ -90,6 +90,11 @@ def transition(
         ).one()
         pending_period.ended_at = now
 
+    if new_status == TicketStatus.RESOLVED:
+        # Overwritten on each re-resolution (after a Closed -> Open ->
+        # ... -> Resolved cycle) so it always reflects the most recent one.
+        ticket.resolved_at = now
+
     ticket.status = new_status
     db.commit()
     db.refresh(ticket)

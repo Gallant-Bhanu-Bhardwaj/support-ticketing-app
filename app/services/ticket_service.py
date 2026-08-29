@@ -85,7 +85,7 @@ def list_my_tickets(db: Session, user_id: int, *, archived: bool = False) -> lis
     return list(db.scalars(stmt))
 
 
-def _matching_ticket_ids(
+def matching_ticket_ids(
     viewer: User,
     *,
     archived: bool,
@@ -96,8 +96,9 @@ def _matching_ticket_ids(
     assignee_id: int | None,
 ):
     """The scoped+filtered id subquery shared by search_tickets (paginated,
-    for the queue page) and all_matching_tickets (unpaginated, for CSV
-    export) -- one place filter/scope logic lives, not two."""
+    for the queue page), all_matching_tickets (unpaginated, for CSV export),
+    and dashboard_service's aggregates -- one place filter/scope logic
+    lives, not several."""
     conditions = [Ticket.is_archived == archived]
 
     if not permissions.can_view_full_queue(viewer):
@@ -148,7 +149,7 @@ def search_tickets(
     viewer scope as list_tickets/list_my_tickets -- supervisors search
     everything, agents only ever search their own assigned/collaborated
     tickets, even when a search term would otherwise match someone else's."""
-    matching_ids = _matching_ticket_ids(
+    matching_ids = matching_ticket_ids(
         viewer,
         archived=archived,
         search=search,
@@ -190,7 +191,7 @@ def all_matching_tickets(
     """Every ticket matching the same scope+filters as search_tickets, with
     no pagination -- for CSV export of the current filtered view, which
     must reflect the whole filtered set, not just the visible page."""
-    matching_ids = _matching_ticket_ids(
+    matching_ids = matching_ticket_ids(
         viewer,
         archived=archived,
         search=search,

@@ -69,6 +69,10 @@ class Ticket(Base):
     updated_at: Mapped[datetime] = mapped_column(
         UTCDateTime, server_default=func.now(), onupdate=func.now()
     )
+    # Set by lifecycle_service.transition() whenever the ticket enters
+    # Resolved; overwritten on each re-resolution so it always reflects the
+    # most recent one. Needed for the dashboard's "resolved this week".
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
 
     replies: Mapped[list["Reply"]] = relationship(
         back_populates="ticket", order_by="Reply.created_at"
