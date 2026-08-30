@@ -420,3 +420,13 @@ Real decisions made while building this, in the order they happened.
 - **Why:** The cookie must never be sent over plain HTTP in production, but
   must still work locally over `http://localhost`. An explicit environment
   flag is simpler and more predictable than scheme-sniffing.
+
+## Decision — "View tickets" link removed from logged-out home page
+
+- **Chose:** Removed the "View tickets" link entirely from the
+  unauthenticated landing page; "Sign in" is the sole call to action.
+- **Rejected:** Leaving it pointing at GET /tickets.
+- **Why:** Same principle as goal 7's bulk-toolbar decision — the link
+  could never succeed for a logged-out visitor (every route requires
+  auth, there's no public ticket view), so showing it had no value.
+  Discovered by actually clicking it, not caught in review.

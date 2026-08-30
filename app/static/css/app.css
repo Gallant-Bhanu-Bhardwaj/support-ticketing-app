@@ -193,19 +193,6 @@ a:hover {
     margin-bottom: 1.5rem;
 }
 
-.auth-secondary-link {
-    display: block;
-    text-align: center;
-    color: var(--color-text-secondary);
-    font-size: 0.82rem;
-    text-decoration: none;
-    margin-top: 1rem;
-}
-
-.auth-secondary-link:hover {
-    color: var(--color-accent);
-}
-
 /* ---------- buttons ---------- */
 
 .btn-accent {

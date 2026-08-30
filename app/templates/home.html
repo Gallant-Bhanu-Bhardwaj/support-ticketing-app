@@ -1,12 +1,18 @@
 {% extends "base.html" %}
+{% from "macros/badges.html" import badge %}
 
 {% block title %}Support Ticketing{% endblock %}
 
 {% block content %}
 <div class="auth-card">
     <div class="auth-brand">Support Ticketing</div>
-    <p class="auth-tagline">A shared ticket queue for support teams — track priority, SLA response times, and the full history behind every ticket.</p>
+    <p class="auth-tagline">A shared ticket queue for support teams to track priority, SLA response times, and the full history behind every ticket.</p>
+    <div class="d-flex justify-content-center gap-2 flex-wrap mb-4">
+        {{ badge("status", "new") }}
+        {{ badge("status", "open") }}
+        {{ badge("status", "pending") }}
+        {{ badge("status", "resolved") }}
+    </div>
     <a href="/auth/login" class="btn btn-accent w-100">Sign in</a>
-    <a href="/tickets" class="auth-secondary-link">View tickets</a>
 </div>
 {% endblock %}
