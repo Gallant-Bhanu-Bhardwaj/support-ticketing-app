@@ -69,7 +69,7 @@ Real decisions made while building this, in the order they happened.
 - **Chose:** urgent = 4h, high = 8h, normal = 24h, low = 72h.
 
 - **Why:** The brief requires a target response time per priority without
-  specifying numbers  these are a reasonable, easily-adjustable default
+  specifying numbers  these are a reasonable, easily adjustable default
   stored as plain config, not hardcoded per ticket.
 
 ## Decision — Reopen window (Goal 4)
@@ -82,7 +82,7 @@ Real decisions made while building this, in the order they happened.
 ## Decision — No Resolved → Open transition (Goal 4)
 
 - **Chose:** Resolved tickets can only move forward to Closed. Reopening
-  only exists via Closed → Open, within the 7-day window.
+  only exists via Closed → Open, within the 7 day window.
 
 - **Rejected:** Allowing a Resolved ticket to reopen directly (e.g. on new
   activity) before it's even Closed.
