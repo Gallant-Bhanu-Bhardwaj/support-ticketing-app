@@ -97,7 +97,7 @@ Real decisions made while building this, in the order they happened.
 - **Chose:** Pending → Open is a manual action only.
 
 - **Rejected:** Automatically transitioning a ticket out of Pending whenever
-  a customer-visible reply is added.
+  a customer visible reply is added.
 
 - **Why:** Every reply in the system  internal or customer visible  is
   authored by an agent or supervisor; there's no customer account, so a
@@ -127,7 +127,7 @@ Real decisions made while building this, in the order they happened.
   period table.
 
 - **Why:** One source of truth feeding both the reopen window guard and the
-  elapsed-time exclusion, instead of two fields that could drift apart.
+  elapsed time exclusion, instead of two fields that could drift apart.
 
 ## Decision — Which lifecycle actions are supervisor-gated (Goal 4)
 
@@ -137,7 +137,7 @@ Real decisions made while building this, in the order they happened.
 
 - **Why:** The brief calls out "close tickets" as the one lifecycle action
   specific to supervisor nothing else in the brief is stated as
-  supervisor-only.
+  supervisor only.
 
 
 
@@ -161,7 +161,7 @@ Real decisions made while building this, in the order they happened.
 ## Decision — Collaborators must be agents (Goal 5)
 
 - **Chose:** Both primary assignee and collaborators must be users with the
-  agent role; a supervisor can't be added as either.
+  agent role, a supervisor can't be added as either.
 
 - **Why:** The brief only ever describes supervisors reassigning tickets to
   agents, never being assignees themselves.
@@ -215,7 +215,7 @@ Real decisions made while building this, in the order they happened.
 - **Rejected:** A naive `ORDER BY priority` on the raw string column.
 
 - **Why:** Priority is stored as a plain string, so alphabetical ordering
-  produces `high, low, normal, urgent` nonsense for a severity-based
+  produces `high, low, normal, urgent` nonsense for a severity based
   sort. Caught before committing, with a regression test
   (`test_sort_by_priority_uses_severity_order_not_alphabetical`) that fails
   against the naive version.
@@ -250,7 +250,7 @@ Real decisions made while building this, in the order they happened.
   level role check.
 
 - **Why:** One source of truth for "who can reassign/close a ticket,"
-  instead of two rules a route-level check and a per-ticket check that
+  instead of two rules a route level check and a per ticket check that
   could drift apart over time. Verified role-agnostic with a dedicated
   test.
 
@@ -263,7 +263,7 @@ Real decisions made while building this, in the order they happened.
   ticket refused-report explain why nothing happened.
 
 - **Why:** `can_reassign_ticket` and `can_close_ticket` are both
-  unconditionally supervisor-only, so an agent's bulk action would always
+  unconditionally supervisor only, so an agent's bulk action would always
   come back 100% refused a control that can never succeed has no value.
 
   ## Decision — CSV breach_status granularity (Goal 7)
@@ -272,7 +272,7 @@ Real decisions made while building this, in the order they happened.
   the CSV export, computed via the existing
   `elapsed_response_time_for_ticket` + `TARGET_RESPONSE_TIME`.
 
-- **Rejected:** A three-state value (`breaching`/`at-risk`/`on_track`)
+- **Rejected:** A three state value (`breaching`/`at-risk`/`on_track`)
   matching goal 10's eventual SLA alert model.
 
 - **Why:** The "at-risk" threshold how close to breaching counts as
@@ -296,21 +296,21 @@ Real decisions made while building this, in the order they happened.
 
 ## Decision — Agent dashboard's missing "breakdown by agent" (Goal 8)
 
-- **Chose:** Simply omit the by-agent breakdown from an agent's dashboard
+- **Chose:** Simply omit the by agent breakdown from an agent's dashboard
   view. Headline numbers, status breakdown, and the resolved/week chart are
   the full agent view.
 
 - **Rejected:** Inventing a substitute dimension for agents in place of the
   by-agent breakdown.
 
-- **Why:** A breakdown by agent only makes sense from a queue-wide view; an
+- **Why:** A breakdown by agent only makes sense from a queue wide view; an
   agent's own scoped view would only ever show themselves, so replacing it
   with something invented would add complexity the brief never asked for.
 
 ## Decision — "This week" definition (Goal 8)
 
 - **Chose:** Calendar week, Monday–Sunday UTC, applied consistently to both
-  the "resolved this week" headline number and the 8-week chart's bucketing.
+  the "resolved this week" headline number and the 8 week chart's bucketing.
 
 - **Why:** The brief doesn't define the boundary; a fixed, consistent
   definition avoids the headline number and the chart silently disagreeing
@@ -344,7 +344,7 @@ Real decisions made while building this, in the order they happened.
 
 ## Decision — SLA alert visibility scope (Goal 10)
 
-- **Chose:** Supervisors see all breaching at-risk tickets in alerts,
+- **Chose:** Supervisors see all breaching at risk tickets in alerts,
   agents see only tickets where they're primary assignee or collaborator.
 
 - **Rejected:** A single shared alerts view identical for both roles.
@@ -357,7 +357,7 @@ Real decisions made while building this, in the order they happened.
 
   ## Decision — SLA at-risk window (Goal 10)
 
-- **Chose:** At-risk = elapsed time within 90% of the priority's target — a
+- **Chose:** At-risk = elapsed time within 90% of the priority's target  a
   percentage, not a fixed duration.
 
 - **Rejected:** A fixed duration window (e.g., "within 2 hours of
@@ -377,7 +377,7 @@ Real decisions made while building this, in the order they happened.
 - **Rejected:** A single ticket level acknowledgment clearing the alert for
   everyone once any one person acknowledges it.
 
-- **Why:** The brief's own wording — "clearing it from their list"
+- **Why:** The brief's own wording  "clearing it from their list"
   implies a personal list; one collaborator dismissing an alert shouldn't
   hide it from the primary assignee or a supervisor who hasn't seen it yet.
 
@@ -386,7 +386,7 @@ Real decisions made while building this, in the order they happened.
 
 - **Chose:** Added `TicketResolvedPeriod`, symmetric to
   `TicketPendingPeriod`/`TicketClosedPeriod`, excluding time spent
-  Resolved-but-not-yet-Closed from `elapsed_response_time_for_ticket`.
+  Resolved but not yet Closed from `elapsed_response_time_for_ticket`.
 
 - **Rejected:** Leaving Resolved period time counted toward elapsed, the
   original goal 4 design.
@@ -418,7 +418,7 @@ Real decisions made while building this, in the order they happened.
   
   ## Decision — JWT secret required, no fallback (Review pass)
 
-- **Chose:** `jwt_secret_key: str` with no default in `Settings` — the app
+- **Chose:** `jwt_secret_key: str` with no default in `Settings` the app
   fails to start (`pydantic.ValidationError`) if `JWT_SECRET_KEY` isn't set
   via environment or `.env`.
 
