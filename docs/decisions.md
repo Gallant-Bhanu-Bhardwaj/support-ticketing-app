@@ -350,7 +350,7 @@ Real decisions made while building this, in the order they happened.
 - **Rejected:** A single shared alerts view identical for both roles.
 
 - **Why:** Consistent with the original goal-1 roles table ("View entire
-  queue — Agent: No, Supervisor: Yes") and the same viewer scoping already
+  queue Agent: No, Supervisor: Yes") and the same viewer scoping already
   established since goal 5 reused directly for alerts rather than
   building parallel logic.
 
