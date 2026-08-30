@@ -26,7 +26,7 @@ wait roughly a minute and reload rather than assuming it's broken.
 
 | Layer | What you used | Why |
 |-------|---------------|-----|
-| Frontend | Jinja2 server-rendered templates, Bootstrap 5, HTMX, Chart.js (all via CDN) | No SPA needed for a server-rendered CRUD app; HTMX covers the few spots (archive/restore, alert badge) that want a partial update without a full JS build/toolchain |
+| Frontend | Jinja2 server-rendered templates, Bootstrap 5, HTMX, Chart.js (all via CDN) | No SPA needed for a server-rendered CRUD app  HTMX covers the few spots (archive/restore, alert badge) that want a partial update without a full JS build/toolchain |
 | Backend | FastAPI, SQLAlchemy 2.0, Alembic, Pydantic Settings, python-jose (JWT), passlib + bcrypt | FastAPI's dependency injection made per-request auth (`get_current_user`) and DB session handling straightforward SQLAlchemy + Alembic keep the schema and its migration history explicit and portable between SQLite and Postgres |
 | Database | SQLite locally (`app.db`), Postgres in production (Render-managed) | One `DATABASE_URL` setting selects the backend with no code branching beyond a single connect-args check in `app/core/database.py` SQLite is zero-setup for local dev, Postgres is what the free hosting tier provides |
 | Hosting | Render (Blueprint via `render.yaml`) — one web service (`uvicorn`) plus a managed Postgres database | Free tier covers both a web service and a database with a `DATABASE_URL` wired automatically; `render.yaml` keeps the build/start commands and required env vars (`JWT_SECRET_KEY`, `ENVIRONMENT`, `PYTHON_VERSION`) versioned in the repo |
