@@ -1,47 +1,37 @@
 {% extends "base.html" %}
+{% from "macros/badges.html" import badge %}
 
 {% block title %}SLA Alerts — Support Ticketing{% endblock %}
 
 {% block content %}
-<h1>SLA Alerts</h1>
-<p class="text-muted">Active tickets breaching, or nearing, their target response time.</p>
+<h1 class="mb-1">SLA Alerts</h1>
+<p class="secondary mb-4">Active tickets breaching, or nearing, their target response time.</p>
 
-<table class="table table-hover align-middle">
-    <thead>
-        <tr>
-            <th>Subject</th>
-            <th>Assignee</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Elapsed</th>
-            <th>Target</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for alert in alerts %}
-        <tr id="alert-row-{{ alert.ticket.id }}">
-            <td><a href="/tickets/{{ alert.ticket.id }}">{{ alert.ticket.subject }}</a></td>
-            <td>{{ alert.ticket.primary_assignee.email }}</td>
-            <td>{{ alert.ticket.priority.value }}</td>
-            <td>
-                {% if alert.status == "breaching" %}
-                <span class="badge text-bg-danger">Breaching</span>
-                {% else %}
-                <span class="badge text-bg-warning">At risk</span>
-                {% endif %}
-            </td>
-            <td>{{ (alert.elapsed.total_seconds() // 3600) | int }}h</td>
-            <td>{{ (alert.target.total_seconds() // 3600) | int }}h</td>
-            <td>
-                <form method="post" action="/alerts/{{ alert.ticket.id }}/acknowledge">
-                    <button type="submit" class="btn btn-sm btn-outline-secondary">Acknowledge</button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="7" class="text-muted">No active alerts.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% for alert in alerts %}
+<div class="surface-card alert-card mb-2" id="alert-row-{{ alert.ticket.id }}">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <a href="/tickets/{{ alert.ticket.id }}" class="alert-subject">{{ alert.ticket.subject }}</a>
+            <div class="secondary small mt-1">
+                Assignee: {{ alert.ticket.primary_assignee.email }} &middot;
+                Elapsed <span class="mono">{{ (alert.elapsed.total_seconds() // 3600) | int }}h</span> of
+                <span class="mono">{{ (alert.target.total_seconds() // 3600) | int }}h</span> target
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {{ badge("priority", alert.ticket.priority.value) }}
+            {% if alert.status == "breaching" %}
+            <span class="pill" style="--pill-color: var(--priority-urgent);">Breaching</span>
+            {% else %}
+            <span class="pill" style="--pill-color: var(--status-pending);">At risk</span>
+            {% endif %}
+            <form method="post" action="/alerts/{{ alert.ticket.id }}/acknowledge" class="mb-0">
+                <button type="submit" class="btn btn-accent">Acknowledge</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% else %}
+<p class="secondary">No active alerts.</p>
+{% endfor %}
 {% endblock %}

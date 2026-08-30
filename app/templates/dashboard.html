@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/badges.html" import badge %}
 
 {% block title %}Dashboard — Support Ticketing{% endblock %}
 
@@ -7,74 +8,71 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Dashboard</h1>
-    <span class="text-muted">Signed in as {{ current_user.email }} ({{ current_user.role.value }})</span>
-</div>
+<h1 class="mb-4">Dashboard</h1>
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h6 class="card-subtitle text-muted mb-2">Open</h6>
-                <p class="card-text fs-2 mb-0">{{ headlines.open }}</p>
-            </div>
+        <div class="surface-card stat-card h-100">
+            <div class="stat-label">Open</div>
+            <div class="stat-value">{{ headlines.open }}</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h6 class="card-subtitle text-muted mb-2">Pending on customer</h6>
-                <p class="card-text fs-2 mb-0">{{ headlines.pending }}</p>
-            </div>
+        <div class="surface-card stat-card h-100">
+            <div class="stat-label">Pending on customer</div>
+            <div class="stat-value">{{ headlines.pending }}</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h6 class="card-subtitle text-muted mb-2">Resolved this week</h6>
-                <p class="card-text fs-2 mb-0">{{ headlines.resolved_this_week }}</p>
-            </div>
+        <div class="surface-card stat-card h-100">
+            <div class="stat-label">Resolved this week</div>
+            <div class="stat-value">{{ headlines.resolved_this_week }}</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card h-100 border-danger">
-            <div class="card-body">
-                <h6 class="card-subtitle text-muted mb-2">Breaching SLA</h6>
-                <p class="card-text fs-2 mb-0 text-danger">{{ headlines.breaching }}</p>
-            </div>
+        <div class="surface-card stat-card stat-card--accent h-100">
+            <div class="stat-label">Breaching SLA</div>
+            <div class="stat-value">{{ headlines.breaching }}</div>
         </div>
     </div>
 </div>
 
 <div class="row g-4">
     <div class="col-md-4">
-        <h2 class="h5">By status</h2>
-        <table class="table table-sm">
-            <tbody>
+        <div class="surface-card h-100">
+            <h2 class="h6 mb-3">By status</h2>
+            <div class="breakdown-list">
                 {% for row in status_breakdown %}
-                <tr><td>{{ row.status.value }}</td><td>{{ row.count }}</td></tr>
+                <div class="breakdown-row">
+                    {{ badge("status", row.status.value) }}
+                    <span class="mono">{{ row.count }}</span>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </div>
     </div>
 
     {% if agent_breakdown is not none %}
     <div class="col-md-4">
-        <h2 class="h5">By agent</h2>
-        <table class="table table-sm">
-            <tbody>
+        <div class="surface-card h-100">
+            <h2 class="h6 mb-3">By agent</h2>
+            <div class="breakdown-list">
                 {% for row in agent_breakdown %}
-                <tr><td>{{ row.agent }}</td><td>{{ row.count }}</td></tr>
+                <div class="breakdown-row">
+                    <span>{{ row.agent }}</span>
+                    <span class="mono">{{ row.count }}</span>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </div>
     </div>
     {% endif %}
 
     <div class="col-md-4">
-        <h2 class="h5">Resolved per week</h2>
-        <canvas id="resolved-chart" height="200"></canvas>
+        <div class="surface-card h-100">
+            <h2 class="h6 mb-3">Resolved per week</h2>
+            <canvas id="resolved-chart" height="200"></canvas>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -84,13 +82,39 @@
     fetch("/dashboard/chart-data")
         .then(function (response) { return response.json(); })
         .then(function (weeks) {
+            var styles = getComputedStyle(document.documentElement);
+            var accent = styles.getPropertyValue("--color-accent").trim();
+            var accentHover = styles.getPropertyValue("--color-accent-hover").trim();
+            var secondary = styles.getPropertyValue("--color-text-secondary").trim();
+            var border = styles.getPropertyValue("--color-border").trim();
+
             new Chart(document.getElementById("resolved-chart"), {
                 type: "bar",
                 data: {
                     labels: weeks.map(function (week) { return week.week_start; }),
-                    datasets: [{ label: "Resolved", data: weeks.map(function (week) { return week.count; }) }],
+                    datasets: [{
+                        label: "Resolved",
+                        data: weeks.map(function (week) { return week.count; }),
+                        backgroundColor: accent,
+                        hoverBackgroundColor: accentHover,
+                        borderRadius: 4,
+                        maxBarThickness: 28,
+                    }],
                 },
-                options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: secondary },
+                            grid: { color: border },
+                        },
+                        x: {
+                            ticks: { color: secondary },
+                            grid: { display: false },
+                        },
+                    },
+                },
             });
         });
 </script>
