@@ -28,7 +28,7 @@ def alerts_count(
     count = len(alerts_service.list_alerts(db, current_user))
     if not count:
         return HTMLResponse("")
-    return HTMLResponse(f'<span class="badge text-bg-danger">{count}</span>')
+    return HTMLResponse(f'<span class="pill" style="--pill-color: var(--priority-urgent);">{count}</span>')
 
 
 @router.post("/{ticket_id}/acknowledge")

@@ -26,7 +26,6 @@ def dashboard(
         request,
         "dashboard.html",
         {
-            "current_user": current_user,
             "headlines": headlines,
             "status_breakdown": status_breakdown,
             "agent_breakdown": agent_breakdown,

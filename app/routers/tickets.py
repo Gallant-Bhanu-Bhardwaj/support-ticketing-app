@@ -29,12 +29,11 @@ def _list_agents(db: Session) -> list[User]:
     return list(db.scalars(select(User).where(User.role == UserRole.AGENT).order_by(User.email)))
 
 
-def _form_choices(db: Session, current_user: User) -> dict:
+def _form_choices(db: Session) -> dict:
     return {
         "priorities": list(TicketPriority),
         "categories": list(TicketCategory),
         "agents": _list_agents(db),
-        "current_user": current_user,
     }
 
 
@@ -122,7 +121,6 @@ def list_active(
         "tickets/list.html",
         {
             "tickets": tickets,
-            "current_user": current_user,
             "total": total,
             "page": page,
             "page_size": page_size,
@@ -232,7 +230,7 @@ def new_form(
     request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     return templates.TemplateResponse(
-        request, "tickets/form.html", {"ticket": None, **_form_choices(db, current_user)}
+        request, "tickets/form.html", {"ticket": None, **_form_choices(db)}
     )
 
 
@@ -263,7 +261,6 @@ def detail(
         {
             "ticket": ticket,
             "timeline": timeline,
-            "current_user": current_user,
             "available_agents": available_agents,
         },
     )
@@ -278,7 +275,7 @@ def edit_form(
 ):
     ticket = ticket_service.get_editable_ticket_or_404(db, ticket_id, current_user)
     return templates.TemplateResponse(
-        request, "tickets/form.html", {"ticket": ticket, **_form_choices(db, current_user)}
+        request, "tickets/form.html", {"ticket": ticket, **_form_choices(db)}
     )
 
 
@@ -315,7 +312,6 @@ def change_status(
             {
                 "ticket": ticket,
                 "timeline": timeline,
-                "current_user": current_user,
                 "available_agents": available_agents,
                 "status_error": exc.detail,
             },

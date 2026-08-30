@@ -12,5 +12,5 @@ def admin_area(request: Request, current_user: User = Depends(require_role(UserR
     return templates.TemplateResponse(
         request,
         "protected.html",
-        {"current_user": current_user, "heading": "Supervisor area"},
+        {"heading": "Supervisor area"},
     )
