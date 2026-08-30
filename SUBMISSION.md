@@ -100,6 +100,6 @@ assumed. Validity is enforced entirely by Python's Enum type and Pydantic
 on the way in. A row inserted via raw SQL with an out-of-range string
 would be silently accepted. It's consistent with how the rest of the
 authorization and business logic in this app works enforced in the
-service layer, not the database — but it's the one place where I'd want
+service layer, not the database but it's the one place where I'd want
 defense in depth, I didn't build a bad value getting in through anything
 other than the app's own routes has no second line of defense.
