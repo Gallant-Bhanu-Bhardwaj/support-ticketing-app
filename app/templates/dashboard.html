@@ -10,37 +10,42 @@
 {% block content %}
 <h1 class="mb-4">Dashboard</h1>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="surface-card stat-card h-100">
-            <div class="stat-label">Open</div>
-            <div class="stat-value">{{ headlines.open }}</div>
-        </div>
+<div class="surface-card chart-card mb-4">
+    <h2 class="h6 mb-3">Resolved per week</h2>
+    <canvas id="resolved-chart" height="90"></canvas>
+</div>
+
+<div class="surface-card stat-strip mb-4">
+    <div class="stat-strip-item">
+        <div class="stat-label">Open</div>
+        <div class="stat-value">{{ headlines.open }}</div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="surface-card stat-card h-100">
-            <div class="stat-label">Pending on customer</div>
-            <div class="stat-value">{{ headlines.pending }}</div>
-        </div>
+    <div class="stat-strip-item">
+        <div class="stat-label">Pending on customer</div>
+        <div class="stat-value">{{ headlines.pending }}</div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="surface-card stat-card h-100">
-            <div class="stat-label">Resolved this week</div>
-            <div class="stat-value">{{ headlines.resolved_this_week }}</div>
-        </div>
+    <div class="stat-strip-item">
+        <div class="stat-label">Resolved this week</div>
+        <div class="stat-value">{{ headlines.resolved_this_week }}</div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="surface-card stat-card stat-card--accent h-100">
-            <div class="stat-label">Breaching SLA</div>
-            <div class="stat-value">{{ headlines.breaching }}</div>
-        </div>
+    <div class="stat-strip-item stat-strip-item--accent">
+        <div class="stat-label">Breaching SLA</div>
+        <div class="stat-value">{{ headlines.breaching }}</div>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-4">
-        <div class="surface-card h-100">
-            <h2 class="h6 mb-3">By status</h2>
+{% if agent_breakdown is not none %}
+<div class="surface-card">
+    <ul class="nav nav-tabs" id="breakdown-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-pane" type="button" role="tab" aria-controls="status-pane" aria-selected="true">By status</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="agent-tab" data-bs-toggle="tab" data-bs-target="#agent-pane" type="button" role="tab" aria-controls="agent-pane" aria-selected="false">By agent</button>
+        </li>
+    </ul>
+    <div class="tab-content pt-3">
+        <div class="tab-pane fade show active" id="status-pane" role="tabpanel" aria-labelledby="status-tab">
             <div class="breakdown-list">
                 {% for row in status_breakdown %}
                 <div class="breakdown-row">
@@ -50,12 +55,7 @@
                 {% endfor %}
             </div>
         </div>
-    </div>
-
-    {% if agent_breakdown is not none %}
-    <div class="col-md-4">
-        <div class="surface-card h-100">
-            <h2 class="h6 mb-3">By agent</h2>
+        <div class="tab-pane fade" id="agent-pane" role="tabpanel" aria-labelledby="agent-tab">
             <div class="breakdown-list">
                 {% for row in agent_breakdown %}
                 <div class="breakdown-row">
@@ -66,15 +66,20 @@
             </div>
         </div>
     </div>
-    {% endif %}
-
-    <div class="col-md-4">
-        <div class="surface-card h-100">
-            <h2 class="h6 mb-3">Resolved per week</h2>
-            <canvas id="resolved-chart" height="200"></canvas>
+</div>
+{% else %}
+<div class="surface-card">
+    <h2 class="h6 mb-3">By status</h2>
+    <div class="breakdown-list">
+        {% for row in status_breakdown %}
+        <div class="breakdown-row">
+            {{ badge("status", row.status.value) }}
+            <span class="mono">{{ row.count }}</span>
         </div>
+        {% endfor %}
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
@@ -98,7 +103,7 @@
                         backgroundColor: accent,
                         hoverBackgroundColor: accentHover,
                         borderRadius: 4,
-                        maxBarThickness: 28,
+                        maxBarThickness: 36,
                     }],
                 },
                 options: {

@@ -14,6 +14,7 @@
 <table class="data-table mb-0">
     <thead>
         <tr>
+            <th class="priority-accent-col"></th>
             <th>Subject</th>
             <th>Requester</th>
             <th>Assignee</th>
@@ -26,6 +27,7 @@
     <tbody>
         {% for ticket in tickets %}
         <tr id="ticket-row-{{ ticket.id }}">
+            <td class="priority-accent" style="--accent-color: var(--priority-{{ ticket.priority.value }});"></td>
             <td class="subject-cell"><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
             <td class="secondary">{{ ticket.requester }}</td>
             <td class="secondary">{{ ticket.primary_assignee.email }}</td>
@@ -42,7 +44,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="secondary">No archived tickets.</td></tr>
+        <tr><td colspan="8" class="secondary">No archived tickets.</td></tr>
         {% endfor %}
     </tbody>
 </table>

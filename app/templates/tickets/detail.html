@@ -8,137 +8,113 @@
 <div class="alert alert-danger">{{ status_error }}</div>
 {% endif %}
 
-<div class="mb-3">
-    <span class="ticket-id mono">#{{ ticket.id }}</span>
-    <h1 class="mb-0">{{ ticket.subject }}</h1>
-</div>
+<div class="surface-card mb-4">
+    <div class="ticket-header-top">
+        <span class="ticket-id mono">#{{ ticket.id }}</span>
+        <h1>{{ ticket.subject }}</h1>
+        {{ badge("status", ticket.status.value) }}
+        {{ badge("priority", ticket.priority.value) }}
+    </div>
 
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="surface-card mb-4">
-            <p class="mb-0">{{ ticket.description }}</p>
-        </div>
+    <div class="ticket-header-meta">
+        <span class="meta-chip">Assignee: <strong>{{ ticket.primary_assignee.email }}</strong></span>
+        <span class="meta-chip">Requester: {{ ticket.requester }}</span>
+        <span class="meta-chip">{{ ticket.category.value }}</span>
+        <span class="meta-chip mono">Created {{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
 
-        <div class="surface-card">
-            <h2 class="h5">Timeline</h2>
-            <p class="secondary small">Every status change, reassignment, and reply, in order. Nothing here can be edited or deleted after the fact.</p>
-            <div>
-                {% for event in timeline %}
-                    {% if event.event_type.value == "reply" %}
-                    <div class="timeline-item">
-                        <div class="timeline-icon {{ 'timeline-icon--reply-internal' if event.reply.is_internal else 'timeline-icon--reply-customer' }}">R</div>
-                        <div class="timeline-body">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <strong>{{ event.reply.author.email }}</strong>
-                                <span class="secondary small mono">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
-                            </div>
-                            {% if event.reply.is_internal %}
-                            <span class="pill" style="--pill-color: var(--status-pending);">Internal note</span>
-                            {% else %}
-                            <span class="pill" style="--pill-color: var(--status-resolved);">Customer-visible</span>
-                            {% endif %}
-                            <p class="mb-0 mt-2">{{ event.reply.body }}</p>
-                        </div>
-                    </div>
-                    {% elif event.event_type.value == "status_change" %}
-                    <div class="timeline-item">
-                        <div class="timeline-icon timeline-icon--status">S</div>
-                        <div class="timeline-body secondary small">
-                            <span class="mono">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span> &mdash;
-                            {{ event.actor.email }} changed status from
-                            <strong>{{ event.old_status.value }}</strong> to <strong>{{ event.new_status.value }}</strong>
-                        </div>
-                    </div>
-                    {% elif event.event_type.value == "reassignment" %}
-                    <div class="timeline-item">
-                        <div class="timeline-icon timeline-icon--reassignment">A</div>
-                        <div class="timeline-body secondary small">
-                            <span class="mono">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span> &mdash;
-                            {{ event.actor.email }} reassigned this ticket from
-                            <strong>{{ event.old_assignee.email }}</strong> to <strong>{{ event.new_assignee.email }}</strong>
-                        </div>
-                    </div>
-                    {% endif %}
-                {% else %}
-                <p class="secondary mb-0">No history yet.</p>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="surface-card mt-4">
-            <h2 class="h5">Add a reply</h2>
-            <form method="post" action="/tickets/{{ ticket.id }}/replies">
-                <div class="mb-3">
-                    <textarea class="form-control" name="body" rows="3" required placeholder="Write a reply..."></textarea>
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="is_internal" name="is_internal">
-                    <label class="form-check-label" for="is_internal">Internal note (not visible to customer)</label>
-                </div>
-                <button type="submit" class="btn btn-accent">Add reply</button>
+        {% for collaborator in ticket.collaborators %}
+        <span class="meta-chip">
+            {{ collaborator.email }}
+            <form method="post" action="/tickets/{{ ticket.id }}/collaborators/{{ collaborator.id }}/remove" class="d-inline">
+                <button type="submit" class="chip-remove" aria-label="Remove collaborator">&times;</button>
             </form>
-        </div>
+        </span>
+        {% else %}
+        <span class="secondary">No collaborators yet.</span>
+        {% endfor %}
 
-        <a href="/tickets" class="btn btn-link mt-3 ps-0">Back to tickets</a>
+        {% if available_agents %}
+        <form method="post" action="/tickets/{{ ticket.id }}/collaborators" class="d-flex gap-1 align-items-center">
+            <select class="form-select form-select-sm" name="user_id" required style="max-width: 200px;">
+                {% for agent in available_agents %}
+                <option value="{{ agent.id }}">{{ agent.email }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-accent">+ Collaborator</button>
+        </form>
+        {% endif %}
     </div>
 
-    <div class="col-lg-4">
-        <div class="surface-card meta-panel mb-3">
-            <dl class="mb-0">
-                <dt>Status</dt>
-                <dd>{{ badge("status", ticket.status.value) }}</dd>
-
-                <dt>Priority</dt>
-                <dd>{{ badge("priority", ticket.priority.value) }}</dd>
-
-                <dt>Requester</dt>
-                <dd>{{ ticket.requester }}</dd>
-
-                <dt>Category</dt>
-                <dd class="secondary">{{ ticket.category.value }}</dd>
-
-                <dt>Assignee</dt>
-                <dd>{{ ticket.primary_assignee.email }}</dd>
-
-                <dt>Collaborators</dt>
-                <dd>
-                    {% for collaborator in ticket.collaborators %}
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span>{{ collaborator.email }}</span>
-                        <form method="post" action="/tickets/{{ ticket.id }}/collaborators/{{ collaborator.id }}/remove" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <span class="secondary">No collaborators yet.</span>
-                    {% endfor %}
-
-                    {% if available_agents %}
-                    <form method="post" action="/tickets/{{ ticket.id }}/collaborators" class="d-flex gap-2 mt-2">
-                        <select class="form-select form-select-sm" name="user_id" required>
-                            {% for agent in available_agents %}
-                            <option value="{{ agent.id }}">{{ agent.email }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Add</button>
-                    </form>
-                    {% endif %}
-                </dd>
-
-                <dt>Created</dt>
-                <dd class="secondary mono">{{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</dd>
-            </dl>
-        </div>
-
-        <div class="surface-card">
-            <h2 class="h6">Actions</h2>
-            {% include "tickets/partials/status_actions.html" %}
-            <hr>
-            {% include "tickets/partials/actions.html" %}
-            <div class="mt-2">
-                <a href="/tickets/{{ ticket.id }}/edit" class="btn btn-sm btn-outline-secondary w-100">Edit / Reassign</a>
-            </div>
-        </div>
+    <div class="ticket-header-actions">
+        {% include "tickets/partials/status_actions.html" %}
+        {% include "tickets/partials/actions.html" %}
+        <a href="/tickets/{{ ticket.id }}/edit" class="btn btn-sm btn-outline-secondary">Edit / Reassign</a>
     </div>
 </div>
+
+<div class="surface-card mb-4">
+    <p class="mb-0">{{ ticket.description }}</p>
+</div>
+
+<div class="surface-card">
+    <h2 class="h5">Timeline</h2>
+    <p class="secondary small">Every status change, reassignment, and reply, in order. Nothing here can be edited or deleted after the fact.</p>
+    <div>
+        {% for event in timeline %}
+            {% if event.event_type.value == "reply" %}
+            <div class="timeline-item">
+                <div class="timeline-icon {{ 'timeline-icon--reply-internal' if event.reply.is_internal else 'timeline-icon--reply-customer' }}">R</div>
+                <div class="timeline-body">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>{{ event.reply.author.email }}</strong>
+                        <span class="secondary small mono">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+                    </div>
+                    {% if event.reply.is_internal %}
+                    <span class="pill" style="--pill-color: var(--status-pending);">Internal note</span>
+                    {% else %}
+                    <span class="pill" style="--pill-color: var(--status-resolved);">Customer-visible</span>
+                    {% endif %}
+                    <p class="mb-0 mt-2">{{ event.reply.body }}</p>
+                </div>
+            </div>
+            {% elif event.event_type.value == "status_change" %}
+            <div class="timeline-item">
+                <div class="timeline-icon timeline-icon--status">S</div>
+                <div class="timeline-body secondary small">
+                    <span class="mono">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span> &mdash;
+                    {{ event.actor.email }} changed status from
+                    <strong>{{ event.old_status.value }}</strong> to <strong>{{ event.new_status.value }}</strong>
+                </div>
+            </div>
+            {% elif event.event_type.value == "reassignment" %}
+            <div class="timeline-item">
+                <div class="timeline-icon timeline-icon--reassignment">A</div>
+                <div class="timeline-body secondary small">
+                    <span class="mono">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span> &mdash;
+                    {{ event.actor.email }} reassigned this ticket from
+                    <strong>{{ event.old_assignee.email }}</strong> to <strong>{{ event.new_assignee.email }}</strong>
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+        <p class="secondary mb-0">No history yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="surface-card mt-4">
+    <h2 class="h5">Add a reply</h2>
+    <form method="post" action="/tickets/{{ ticket.id }}/replies">
+        <div class="mb-3">
+            <textarea class="form-control" name="body" rows="3" required placeholder="Write a reply..."></textarea>
+        </div>
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="is_internal" name="is_internal">
+            <label class="form-check-label" for="is_internal">Internal note (not visible to customer)</label>
+        </div>
+        <button type="submit" class="btn btn-accent">Add reply</button>
+    </form>
+</div>
+
+<a href="/tickets" class="btn btn-link mt-3 ps-0">Back to tickets</a>
 {% endblock %}

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet"
     >
     <link
@@ -21,31 +21,33 @@
 </head>
 <body>
     {% set path = request.url.path %}
-    <div class="app-shell {{ '' if current_user else 'app-shell--guest' }}">
+    <div class="page {{ '' if current_user else 'page--guest' }}">
         {% if current_user %}
-        <aside class="sidebar">
-            <div class="sidebar-brand">Support Ticketing</div>
-            <nav class="sidebar-nav">
-                <a href="/dashboard" class="{{ 'active' if path == '/dashboard' }}">Dashboard</a>
-                <a href="/tickets" class="{{ 'active' if path == '/tickets' or (path.startswith('/tickets/') and not path.startswith(('/tickets/mine', '/tickets/archived', '/tickets/new'))) }}">Tickets</a>
-                {% if current_user.role.value == "agent" %}
-                <a href="/tickets/mine" class="{{ 'active' if path.startswith('/tickets/mine') }}">My Tickets</a>
-                {% endif %}
-                <a href="/tickets/archived" class="{{ 'active' if path.startswith('/tickets/archived') }}">Archived</a>
-                <a href="/alerts" class="{{ 'active' if path.startswith('/alerts') }}">
-                    Alerts <span id="alert-badge" hx-get="/alerts/count" hx-trigger="load" hx-swap="innerHTML"></span>
-                </a>
-                <a href="/tickets/new" class="sidebar-new-ticket">+ New ticket</a>
-            </nav>
-            <div class="sidebar-footer">
-                <div class="sidebar-user">Signed in as {{ current_user.email }}<br>({{ current_user.role.value }})</div>
+        <nav class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-brand">Support Ticketing</span>
+                <div class="topnav-links">
+                    <a href="/dashboard" class="{{ 'active' if path == '/dashboard' }}">Dashboard</a>
+                    <a href="/tickets" class="{{ 'active' if path == '/tickets' or (path.startswith('/tickets/') and not path.startswith(('/tickets/mine', '/tickets/archived', '/tickets/new'))) }}">Tickets</a>
+                    {% if current_user.role.value == "agent" %}
+                    <a href="/tickets/mine" class="{{ 'active' if path.startswith('/tickets/mine') }}">My Tickets</a>
+                    {% endif %}
+                    <a href="/tickets/archived" class="{{ 'active' if path.startswith('/tickets/archived') }}">Archived</a>
+                    <a href="/alerts" class="{{ 'active' if path.startswith('/alerts') }}">
+                        Alerts <span id="alert-badge" hx-get="/alerts/count" hx-trigger="load" hx-swap="innerHTML"></span>
+                    </a>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <a href="/tickets/new" class="topnav-new-ticket">+ New ticket</a>
+                <div class="topnav-user">Signed in as {{ current_user.email }}<br>({{ current_user.role.value }})</div>
                 <form method="post" action="/auth/logout">
-                    <button type="submit" class="sidebar-logout">Log out</button>
+                    <button type="submit" class="topnav-logout">Log out</button>
                 </form>
             </div>
-        </aside>
+        </nav>
         {% endif %}
-        <main class="app-main">
+        <main class="page-main {{ 'page-main--guest' if not current_user }}">
             {% block content %}{% endblock %}
         </main>
     </div>

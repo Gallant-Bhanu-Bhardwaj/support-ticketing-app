@@ -1,6 +1,4 @@
-<div id="status-actions" class="mb-3">
-    <p class="mb-1">Status: <strong>{{ ticket.status.value }}</strong></p>
-
+<div id="status-actions" class="d-flex flex-wrap align-items-center gap-2">
     {% if ticket.status.value == "new" %}
     <form method="post" action="/tickets/{{ ticket.id }}/status" class="d-inline">
         <input type="hidden" name="new_status" value="open">

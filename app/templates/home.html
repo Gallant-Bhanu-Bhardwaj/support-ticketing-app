@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "macros/badges.html" import badge %}
 
 {% block title %}Support Ticketing{% endblock %}
 
@@ -7,11 +6,25 @@
 <div class="auth-card">
     <div class="auth-brand">Support Ticketing</div>
     <p class="auth-tagline">A shared ticket queue for support teams to track priority, SLA response times, and the full history behind every ticket.</p>
-    <div class="d-flex justify-content-center gap-2 flex-wrap mb-4">
-        {{ badge("status", "new") }}
-        {{ badge("status", "open") }}
-        {{ badge("status", "pending") }}
-        {{ badge("status", "resolved") }}
+    <div class="pipeline">
+        <div class="pipeline-row">
+            <span class="pipeline-dot" style="--step-color: var(--status-new);"></span>
+            <span class="pipeline-connector"></span>
+            <span class="pipeline-dot" style="--step-color: var(--status-open);"></span>
+            <span class="pipeline-connector"></span>
+            <span class="pipeline-dot" style="--step-color: var(--status-pending);"></span>
+            <span class="pipeline-connector"></span>
+            <span class="pipeline-dot" style="--step-color: var(--status-resolved);"></span>
+            <span class="pipeline-connector"></span>
+            <span class="pipeline-dot" style="--step-color: var(--status-closed);"></span>
+        </div>
+        <div class="pipeline-labels">
+            <span>New</span>
+            <span>Open</span>
+            <span>Pending</span>
+            <span>Resolved</span>
+            <span>Closed</span>
+        </div>
     </div>
     <a href="/auth/login" class="btn btn-accent w-100">Sign in</a>
 </div>

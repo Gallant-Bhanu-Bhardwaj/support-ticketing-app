@@ -12,8 +12,8 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-primary);
 }
 
-.text-secondary-token {
-    color: var(--color-text-secondary) !important;
+.secondary {
+    color: var(--color-text-secondary);
 }
 
 .mono {
@@ -29,121 +29,122 @@ a:hover {
     color: var(--color-accent-hover);
 }
 
-/* ---------- app shell / sidebar ---------- */
+/* ---------- page layout / top nav ---------- */
 
-.app-shell {
-    display: grid;
-    grid-template-columns: 250px 1fr;
+.page {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.app-shell.app-shell--guest {
-    display: flex;
+.page.page--guest {
     align-items: center;
     justify-content: center;
     padding: 1.5rem;
 }
 
-.sidebar {
-    background-color: var(--color-sidebar-bg);
-    color: var(--color-sidebar-text);
-    display: flex;
-    flex-direction: column;
-    padding: 1.25rem 0.75rem;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-}
-
-.sidebar-brand {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.05rem;
-    color: var(--color-sidebar-text-active);
-    padding: 0.5rem 0.75rem 1.5rem;
-}
-
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    flex: 1;
-}
-
-.sidebar-nav a {
+.topnav {
+    background-color: var(--color-nav-bg);
+    border-bottom: 1px solid var(--color-nav-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.55rem 0.75rem;
-    border-radius: 0.4rem;
-    color: var(--color-sidebar-text);
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+}
+
+.topnav-left {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+}
+
+.topnav-brand {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--color-text-primary);
+}
+
+.topnav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.topnav-links a {
+    color: var(--color-nav-text);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 500;
-    border-left: 3px solid transparent;
+    padding: 0.25rem 0;
+    border-bottom: 2px solid transparent;
 }
 
-.sidebar-nav a:hover {
-    background-color: var(--color-sidebar-hover);
-    color: var(--color-sidebar-text-active);
+.topnav-links a:hover {
+    color: var(--color-nav-text-active);
 }
 
-.sidebar-nav a.active {
-    background-color: var(--color-sidebar-hover);
-    color: var(--color-sidebar-text-active);
-    border-left-color: var(--color-accent);
+.topnav-links a.active {
+    color: var(--color-nav-text-active);
+    border-bottom-color: var(--color-accent);
 }
 
-.sidebar-nav .sidebar-new-ticket {
-    margin-top: 0.5rem;
+.topnav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+}
+
+.topnav-new-ticket {
     background-color: var(--color-accent);
     color: #fff;
-    justify-content: center;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+    font-size: 0.85rem;
     font-weight: 600;
 }
 
-.sidebar-nav .sidebar-new-ticket:hover {
+.topnav-new-ticket:hover {
     background-color: var(--color-accent-hover);
     color: #fff;
 }
 
-.sidebar-footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 0.85rem;
-    margin-top: 0.85rem;
+.topnav-user {
+    font-size: 0.76rem;
+    color: var(--color-text-secondary);
+    line-height: 1.3;
+    text-align: right;
 }
 
-.sidebar-user {
-    font-size: 0.78rem;
-    color: var(--color-sidebar-text);
-    padding: 0 0.75rem 0.6rem;
-    line-height: 1.35;
-}
-
-.sidebar-logout {
-    width: 100%;
+.topnav-logout {
     background: none;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: var(--color-sidebar-text);
-    border-radius: 0.4rem;
-    padding: 0.4rem 0.75rem;
-    font-size: 0.82rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    border-radius: 0.35rem;
+    padding: 0.32rem 0.65rem;
+    font-size: 0.78rem;
 }
 
-.sidebar-logout:hover {
-    background-color: var(--color-sidebar-hover);
-    color: var(--color-sidebar-text-active);
+.topnav-logout:hover {
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
 }
 
-.app-main {
+.page-main {
+    flex: 1;
     padding: 2rem;
-    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.app-shell--guest .app-main {
+.page-main--guest {
     padding: 0;
-    width: 100%;
     max-width: 420px;
 }
 
@@ -191,6 +192,49 @@ a:hover {
     padding: 0.65rem 0.9rem;
     font-size: 0.85rem;
     margin-bottom: 1.5rem;
+}
+
+.pipeline {
+    margin-bottom: 1.75rem;
+}
+
+.pipeline-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pipeline-dot {
+    flex: 0 0 auto;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background-color: var(--step-color);
+}
+
+.pipeline-connector {
+    flex: 1 1 28px;
+    max-width: 40px;
+    height: 2px;
+    background-color: var(--color-border);
+    margin: 0 0.3rem;
+}
+
+.pipeline-labels {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.pipeline-labels span {
+    flex: 1 1 0;
+    max-width: 4.75rem;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-align: center;
 }
 
 /* ---------- buttons ---------- */
@@ -245,6 +289,16 @@ a:hover {
     border-bottom: 1px solid var(--color-border);
 }
 
+.data-table th.priority-accent-col,
+.data-table td.priority-accent {
+    padding: 0;
+    width: 4px;
+}
+
+.data-table td.priority-accent {
+    background-color: var(--accent-color);
+}
+
 .data-table td {
     padding: 0.65rem 0.75rem;
     border-bottom: 1px solid var(--color-border);
@@ -265,10 +319,6 @@ a:hover {
     color: var(--color-accent);
 }
 
-.data-table .secondary {
-    color: var(--color-text-secondary);
-}
-
 /* ---------- forms ---------- */
 
 .form-label {
@@ -282,23 +332,6 @@ a:hover {
 .ticket-id {
     color: var(--color-text-secondary);
     font-size: 0.85rem;
-}
-
-.meta-panel dt {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--color-text-secondary);
-    font-weight: 600;
-    margin-top: 0.9rem;
-}
-
-.meta-panel dt:first-child {
-    margin-top: 0;
-}
-
-.meta-panel dd {
-    margin: 0.25rem 0 0;
 }
 
 .timeline-item {
@@ -347,8 +380,27 @@ a:hover {
 
 /* ---------- dashboard ---------- */
 
-.stat-card {
-    padding: 1.1rem 1.25rem;
+.stat-strip {
+    display: flex;
+    align-items: stretch;
+}
+
+.stat-strip-item {
+    flex: 1;
+    padding: 0 1.5rem;
+    text-align: center;
+}
+
+.stat-strip-item:first-child {
+    padding-left: 0;
+}
+
+.stat-strip-item:last-child {
+    padding-right: 0;
+}
+
+.stat-strip-item + .stat-strip-item {
+    border-left: 1px solid var(--color-border);
 }
 
 .stat-label {
@@ -368,12 +420,39 @@ a:hover {
     line-height: 1;
 }
 
-.stat-card--accent {
-    border-left: 4px solid var(--priority-urgent);
+.stat-strip-item--accent .stat-value {
+    color: var(--priority-urgent);
 }
 
-.stat-card--accent .stat-value {
-    color: var(--priority-urgent);
+.chart-card canvas {
+    max-height: 320px;
+}
+
+.nav-tabs {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.nav-tabs .nav-link {
+    color: var(--color-text-secondary);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 0.5rem 0.1rem;
+    margin-right: 1.75rem;
+    border-radius: 0;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--color-text-primary);
+    border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--color-text-primary);
+    border-color: var(--color-accent);
+    background: none;
 }
 
 .breakdown-list {
@@ -408,4 +487,141 @@ a:hover {
 
 .alert-subject:hover {
     color: var(--color-accent);
+}
+
+/* ---------- queue filter bar ---------- */
+
+.filter-bar-primary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-bar-primary input[type="text"] {
+    max-width: 280px;
+}
+
+.filter-bar-primary select {
+    max-width: 160px;
+}
+
+.filter-bar-more summary {
+    cursor: pointer;
+    color: var(--color-accent);
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-top: 0.65rem;
+}
+
+.filter-bar-more summary:hover {
+    color: var(--color-accent-hover);
+}
+
+.filter-bar-more-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+}
+
+.filter-bar-more-fields select {
+    max-width: 180px;
+}
+
+/* ---------- bulk toolbar ---------- */
+
+.bulk-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.btn-outline-accent {
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    background-color: transparent;
+}
+
+.btn-outline-accent:hover {
+    background-color: var(--color-accent);
+    color: #fff;
+}
+
+.btn-outline-neutral {
+    border: 1px solid var(--color-text-secondary);
+    color: var(--color-text-primary);
+    background-color: transparent;
+}
+
+.btn-outline-neutral:hover {
+    background-color: var(--color-text-primary);
+    border-color: var(--color-text-primary);
+    color: #fff;
+}
+
+/* ---------- ticket detail header ---------- */
+
+.ticket-header-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+}
+
+.ticket-header-top h1 {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 200px;
+}
+
+.ticket-header-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 0.9rem;
+    margin-bottom: 0.9rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--color-text-primary);
+}
+
+.chip-remove {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+.chip-remove:hover {
+    color: var(--priority-urgent);
+}
+
+.ticket-header-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
 }
