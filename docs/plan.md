@@ -45,6 +45,4 @@ I'd expected roughly 17-18 hours going in. Reconstructed from git commit timesta
   agents on the same ticket, no rate limiting on login, no background job
   or cache for SLA state.
 
-- No literal TODO/FIXME comments anywhere confirmed by searching the
-  codebase directly, not assumed.
 
