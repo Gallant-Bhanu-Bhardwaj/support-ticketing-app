@@ -1,7 +1,7 @@
 ## Session 1 — Scaffold
 
 ### Prompt
-Implement the project scaffold only — no ticketing logic yet.
+Implement the project scaffold only  no ticketing logic yet.
 
 - Folder structure: app/ (models, schemas, routers, services, core, templates, static), tests/, alembic/.
 - FastAPI app instance with a /healthz endpoint.
@@ -17,23 +17,23 @@ test passes, and show me the folder tree.
 
 ### What you got
 app/ package with models, schemas, routers, services, core, templates,
-static; app/core/config.py (pydantic-settings reading DATABASE_URL);
+static; app/core/config.py (pydantic-settings reading DATABASE_URL)
 app/core/database.py (engine/session/Base, with SQLite-vs-Postgres
-connect_args branch); app/main.py (FastAPI instance, static mount, / route);
+connect_args branch) app/main.py (FastAPI instance, static mount, / route)
 app/routers/health.py (/healthz); base.html/home.html (Bootstrap 5 + HTMX via
-CDN); requirements.txt pinned to CLAUDE.md's stack; pytest.ini;
-tests/test_healthz.py; Alembic initialized and wired to app.core.config and
-Base.metadata, empty first migration generated and applied; .gitignore
-updated; .env/.env.example created. pip install, alembic revision/upgrade,
-and pytest all succeeded on the first run — 1 passed, no failures. Manual
+CDN); requirements.txt pinned to CLAUDE.md's stack pytest.ini,
+tests/test_healthz.py Alembic initialized and wired to app.core.config and
+Base.metadata, empty first migration generated and applied .gitignore
+updated .env/.env.example created. pip install, alembic revision/upgrade,
+and pytest all succeeded on the first run 1 passed, no failures. Manual
 curl checks of /healthz, /, and the static file all returned expected
 results on the first try.
 
 ### What you corrected
-Nothing I asked for — no correction prompt was needed for the scaffold. One
+Nothing I asked for no correction prompt was needed for the scaffold. One
 self-initiated change worth noting: after the first pytest run printed a
 PytestDeprecationWarning, Claude Code added `asyncio_default_fixture_loop_scope = function` to pytest.ini 
-on its own, before I saw any output, to silence it. Not a fix to something broken — a proactive cleanup I didn't ask for.
+on its own, before I saw any output, to silence it. Not a fix to something broken a proactive cleanup I didn't ask for.
 
 Commit: 31c727c
 
@@ -63,7 +63,7 @@ Implement goal 1 only: accounts and roles.
 Commit when tests pass.
 
 ### What you got
-User model (email, bcrypt hash, supervisor/agent role); security.py with
+User model (email, bcrypt hash, supervisor/agent role): security.py with
 token creation/decoding and password hash/verify; get_current_user and
 require_role() dependencies applied to every protected route; POST
 /auth/login (HttpOnly, samesite=lax cookie) and POST /auth/logout;
@@ -82,7 +82,7 @@ ValueError unrelated to actual password length. Fixed by pinning
 bcrypt==4.0.1 in requirements.txt.
 
 Also caught before it ran: SQLAlchemy's Enum column defaults to storing the
-Python enum member name (SUPERVISOR/AGENT) rather than its value — added
+Python enum member name (SUPERVISOR/AGENT) rather than its value added
 values_callable so the database stores supervisor/agent as expected.
 
 Design call to document separately in decisions.md: chose uniform 403 for
@@ -92,10 +92,10 @@ missing token, invalid token, and wrong role, instead of the conventional
 Reversed later: originally kept uniform 403 for all auth failures (missing
 token, invalid token, wrong role). Revisited in a later session (commit
 7e6dec6) and split it to the conventional 401 (missing/invalid/expired
-token) vs 403 (valid token, wrong role) — see docs/decisions.md. Only three
+token) vs 403 (valid token, wrong role) see docs/decisions.md. Only three
 tests were actually asserting the old 403-for-missing-token behavior
-(test_protected_route_without_token_is_forbidden, renamed to expect 401;
-test_tickets_route_requires_authentication;
+(test_protected_route_without_token_is_forbidden, renamed to expect 401,
+test_tickets_route_requires_authentication,
 test_reply_requires_authentication) — every other 403 in the suite was
 already a genuine role/ownership check and needed no change.
 
@@ -125,11 +125,11 @@ enums, is_archived, timestamps) + migration; GET/POST /tickets (list +
 create), GET /tickets/new, GET/POST /tickets/{id} (detail + edit), GET
 /tickets/{id}/edit, POST /tickets/{id}/archive|restore, GET
 /tickets/archived. Bootstrap-styled templates; archive/restore use genuine
-HTMX partial swaps, no full-page reloads. Enums: priority
+HTMX partial swaps, no full page reloads. Enums: priority
 (low/normal/high/urgent, chosen to map onto goal 4's SLA targets), category
 (bug/billing/how_to/feature_request/other, arbitrary generic taxonomy),
 status (all five lifecycle states exist on the column, but this goal only
-ever writes "new" — transitions are goal 4's job). 26 tests passing (10
+ever writes "new" transitions are goal 4's job). 26 tests passing (10
 new). Committed as cd9c00f.
 
 ### What you corrected
@@ -137,14 +137,9 @@ No failures this session. Verified FastAPI's Annotated[TicketWrite, Form()]
 pattern actually works with the pinned FastAPI version before committing to
 it, since it's a newer feature.
 
-Three decisions logged for decisions.md: (1) create/edit/archive/restore
-open to any authenticated user for now — no ownership check yet, since
-primary_assignee_id doesn't exist until goal 5; explicitly flagged to
-revisit, and goal 5's prompt was updated to retrofit this. (2) requester
-kept as a single free-text field, not split into name/email, since the
-brief only asks for "a requester." (3) Added /tickets/archived as a
-UI-only addition beyond the literal ask, since restore needs somewhere to
-trigger from once a ticket leaves the default list.
+Three decisions logged for decisions.md: 
+(1) create/edit/archive/restore open to any authenticated user for now no ownership check yet, since primary_assignee_id doesn't exist until goal 5; explicitly flagged to revisit, and goal 5's prompt was updated to retrofit this. 
+(2) requester kept as a single free-text field, not split into name/email, since the brief only asks for "a requester." (3) Added /tickets/archived as a UI-only addition beyond the literal ask, since restore needs somewhere to trigger from once a ticket leaves the default list.
 
 
 ## Session 4 — Replies (Goal 3)
@@ -155,12 +150,12 @@ Implement goal 3 only: replies.
 - Reply model: belongs to exactly one ticket, message body, author (FK to
   user), timestamp, is_internal boolean.
 - POST endpoint to add a reply at any time. For now, any authenticated agent
-  or supervisor can reply to any ticket — same as goal 2's create/edit/
+  or supervisor can reply to any ticket same as goal 2's create/edit/
   archive decision, since there's no primary_assignee_id or collaborator
   data yet to restrict by. That restriction lands in goal 5 once the data
   exists; don't invent a placeholder assignee field to get around this now.
 - Ticket detail page shows all replies in chronological order, visually
-  distinguishing internal notes from customer-visible replies.
+  distinguishing internal notes from customer visible replies.
 - Tests: a reply attaches to the right ticket with the right author/
   timestamp, and both internal and customer-visible replies are stored and
   returned in order.
@@ -170,17 +165,17 @@ Commit when done.
 ### What you got
 Reply model (ticket FK, body, author FK, timestamp, is_internal bool) with
 Ticket.replies / Reply.ticket / Reply.author relationships, using
-TYPE_CHECKING-guarded forward references with no circular-import issues.
-POST endpoint open to any authenticated agent or supervisor for now —
+TYPE_CHECKING-guarded forward references with no circular import issues.
+POST endpoint open to any authenticated agent or supervisor for now
 ownership restriction deferred to goal 5, consistent with goal 2's earlier
 decision. Ticket detail page renders replies chronologically, internal
-notes visually distinguished from customer-visible ones. Checkbox-to-bool
+notes visually distinguished from customer visible ones. Checkbox to bool
 binding (is_internal=on → True, field omitted → default False) worked via
 Pydantic's form coercion on the first try. 32 tests passing (6 new).
 Committed as 8111a94.
 
 ### What you corrected
-None — first run passed clean, no failures.
+None : first run passed clean, no failures.
 
 
 ## Session 5 — Lifecycle + SLA clock (Goal 4)
@@ -191,63 +186,63 @@ this one before writing any code.
 
 - Enforce New → Open → Pending → Resolved → Closed at the service layer. Any
   transition not explicitly allowed must be rejected with a clear message
-  explaining why — write this as an explicit table or function, not scattered
+  explaining why write this as an explicit table or function, not scattered
   if/else checks.
 - Every ticket has a response clock measured against a target response time set
   by its priority. Pick and document your per-priority targets in
   docs/decisions.md.
 - Pending means waiting on the customer: while a ticket sits in Pending, elapsed
   time must not accumulate against the agent. Model this by recording when each
-  Pending period starts/ends and excluding that duration from the elapsed-time
-  calculation — don't try to "pause a timer" in memory.
+  Pending period starts/ends and excluding that duration from the elapsed time
+  calculation don't try to "pause a timer" in memory.
 - A customer reply while Pending returns the ticket to Open and resumes the
   clock.
 - A Closed ticket can be reopened only within a fixed window afterward (pick
-  and document a window, e.g. 7 days) — past that, the server rejects the
+  and document a window, e.g. 7 days) past that, the server rejects the
   reopen with an explanatory message.
 - Tests: every legal transition succeeds, at least two illegal transitions are
   rejected with a message, and a specific unit test asserting elapsed time
   excludes time spent in Pending.
 
-Show me your state-transition table before implementing, so I can check it
+Show me your state transition table before implementing, so I can check it
 against the README first.
 
 ### What you got
-Design proposed before any code: full state-transition table,
-TicketPendingPeriod log table (not an in-memory pause), priority-based SLA
+Design proposed before any code: full state transition table,
+TicketPendingPeriod log table (not an in-memory pause), priority based SLA
 targets (urgent=4h/high=8h/normal=24h/low=72h), 7-day reopen window.
 Implementation: ALLOWED_TRANSITIONS dict in lifecycle_service.py;
 TicketPendingPeriod + TicketClosedPeriod log tables; elapsed_response_time()
 as a pure function over period lists (unit-testable without DB setup) plus
 a DB-backed wrapper; Resolved→Closed gated by goal 1's
-permissions.can_close_ticket; manual-only Pending→Open with a regression
-test proving a reply never auto-resumes the clock. 56 tests passing (24
+permissions.can_close_ticket; manual only Pending→Open with a regression
+test proving a reply never autoresumes the clock. 56 tests passing (24
 new). Committed as 055ceb9. Manually walked new→open→pending→open→resolved,
 agent-blocked-from-closing, supervisor-closes, reopen-within-window, and
-illegal new→closed (409) through the running server — all matched.
+illegal new→closed (409) through the running server all matched.
 
 ### What you corrected
 Two design gaps caught in review before implementation: (1) the original
 design auto-resumed the clock on any non-internal reply added while
-Pending — corrected to manual-only, since every reply is authored by an
+Pending corrected to manualonly, since every reply is authored by an
 agent/supervisor and a customer-visible reply isn't reliable evidence the
 customer actually replied. (2) elapsed() didn't account for time spent
 Closed, meaning a ticket reopened after sitting Closed for days would show
-as instantly, massively breaching — corrected by adding a
+as instantly, massively breaching corrected by adding a
 TicketClosedPeriod table symmetric to the Pending one.
 
 Real bug, not invented: SQLite returns naive datetimes from a
 DateTime(timezone=True) column regardless of the column declaration, while
-Postgres (production) returns tz-aware ones — comparing either against a
+Postgres (production) returns tz-aware ones comparing either against a
 tz-aware "now" would crash locally or silently miscompute in production.
 Fixed with a UTCDateTime TypeDecorator, verified empirically, applied
 retroactively to every existing datetime column.
 
 Logged for decisions.md: dropped the standalone Ticket.closed_at column in
-favor of deriving it from the open TicketClosedPeriod row — one source of
+favor of deriving it from the open TicketClosedPeriod row one source of
 truth for both the reopen-window guard and the elapsed-time exclusion.
 
-Addendum — multi-cycle check requested separately: confirmed the gap was
+Addendum — multicycle check requested separately: confirmed the gap was
 real. Added test_elapsed_excludes_multiple_pending_periods_summed and
 test_elapsed_excludes_multiple_closed_periods_summed (pure-function, hand-
 built period lists) plus test_elapsed_for_ticket_with_multiple_pending_cycles
@@ -264,7 +259,7 @@ as 05b05bb.
 ### Prompt
 Implement goal 5 only: collaborators.
 
-- Add primary_assignee_id (FK to User, required, must reference an agent —
+- Add primary_assignee_id (FK to User, required, must reference an agent
   never a supervisor; goal 1 only ever describes supervisors reassigning
   tickets to agents, never becoming assignees themselves). Goal 2's create
   flow doesn't collect this yet: extend it so creating agents default to
@@ -275,7 +270,7 @@ Implement goal 5 only: collaborators.
 - Collaborators can reply to and update the ticket, same as the assignee.
 - One "my tickets" endpoint/page per agent: every ticket where they're primary
   assignee OR a collaborator.
-- Wire the permission stubs from goal 1 to actually use this now — and this
+- Wire the permission stubs from goal 1 to actually use this now and this
   means going back to retrofit, not just gating new code. Goals 2, 3, and 4
   left ticket edit, archive/restore, replies, and status transitions open to
   any authenticated agent because there was no assignee data to restrict by
@@ -300,23 +295,24 @@ Create/edit assignment rules enforced server-side (agents always
 self-assign; supervisors must pick or get 422). GET /tickets/mine.
 Add/remove-collaborator endpoints. Retrofit: permissions.can_act_on_ticket
 now gates edit, archive, restore, reply, and status transitions across
-ticket_service, reply_service, lifecycle_service, and collaborator_service
-— not just new code. 79 tests passing. Committed as 46417d3.
+ticket_service, reply_service, lifecycle_service, and collaborator_service  not just new code. 79 tests passing. Committed as 46417d3.
 
 ### What you corrected
-Two real bugs, not invented: (1) a test asserted the literal string "I'm
+Two real bugs, not invented: 
+(1) a test asserted the literal string "I'm
 collaborating here" in rendered HTML, but Jinja2's autoescaping turns ' into
 &#39; — confirmed via a standalone Jinja2 repro this was correct app
-behavior, fixed the test data instead of the app. (2) First Alembic
-migration attempt failed on SQLite's lack of standalone ALTER TABLE ADD
+behavior, fixed the test data instead of the app. 
+
+(2) First Alembic migration attempt failed on SQLite's lack of standalone ALTER TABLE ADD
 CONSTRAINT outside batch mode, leaving orphaned DDL behind; cleaned up the
 orphaned table/column by hand before retrying with corrected batch-mode
 version.
 
 Decisions logged for decisions.md: agents can't set a different assignee
-even at creation; collaborators must be agents too; collaborator management
+even at creation; collaborators must be agents too collaborator management
 gated by the same can_act_on_ticket check (resolves the "needs explicit
-decision" flag on this from Session 1's original roles table); migration
+decision" flag on this from Session 1's original roles table) migration
 backfill assigned pre-existing tickets to the earliest-created agent,
 explicitly flagged as a placeholder, not a real triage strategy.
 
@@ -325,18 +321,18 @@ Real gap surfaced and flagged rather than guessed: GET /tickets and GET
 see addendum.
 
 Addendum — three-point follow-up (commit 5bc25d3):
-1. View scoping fixed — ticket_service.list_tickets now takes a viewer and
-delegates to list_my_tickets for non-supervisors; GET /tickets and GET
+1. View scoping fixed ticket_service.list_tickets now takes a viewer and
+delegates to list_my_tickets for non-supervisors GET /tickets and GET
 /tickets/archived inherit this. GET /tickets/{id} now goes through
 get_viewable_ticket_or_404, applying can_view_ticket. Verified on live
 server: agent2 got 403 on agent1's ticket; agent2's queue excluded it;
 agent1's and the supervisor's queues both included it.
-2. Edit-time reassignment — checked, already correct, no gap.
+2. Edit-time reassignment : checked, already correct, no gap.
 test_agent_cannot_reassign_via_edit and test_supervisor_can_reassign_via_edit
 were already written and passing from goal 5; update_ticket already routes
-assignee changes through permissions.can_reassign_ticket. No change made —
+assignee changes through permissions.can_reassign_ticket. No change made
 verified before deciding not to touch it.
-3. Create-time silent override fixed — create_ticket now raises 403
+3. Create-time silent override fixed : create_ticket now raises 403
 ("Agents can only create tickets assigned to themselves.") instead of
 silently forcing self-assignment. Confirmed via live server response body.
 Normal UI unaffected, since the create form never sends primary_assignee_id
@@ -800,20 +796,20 @@ correctly under the real postgresql dialect, with ILIKE switching to the
 native operator; no SQLite-specific code exists outside the one
 intentional connect_args branch. Added a defensive
 postgres://→postgresql:// normalizer for a known SQLAlchemy 1.4+ gotcha
-(the exact issue that broke many Heroku deployments).
+
 
 Caught at the documentation layer: .env.example previously listed
 JWT_SECRET_KEY=change-me, the exact copy-pasteable-looking-safe value the
 code-level fix was meant to eliminate. Updated to genuinely empty values
 for all variables, including ENVIRONMENT.
 
-Addendum — deployment (commit 058a417): First deploy attempt failed —
+Addendum — deployment (commit 058a417): First deploy attempt failed
 Render defaulted to Python 3.14 (no PYTHON_VERSION pinned), which has no
 pre-built wheel for the pinned pydantic-core version. pip fell back to
 compiling it from source via maturin/Rust, which failed on Render's
-read-only filesystem. Fixed by pinning PYTHON_VERSION=3.12.14 in
-render.yaml — confirmed as the exact local dev interpreter version via
+read only filesystem. Fixed by pinning PYTHON_VERSION=3.12.14 in
+render.yaml confirmed as the exact local dev interpreter version via
 python3.12 --version before using it, not guessed. Required a Blueprint
 "Manual Sync" (not "Manual Deploy") to actually pick up the new render.yaml
-env var, since Manual Deploy alone doesn't re-read blueprint config for an
+env var, since Manual Deploy alone doesn't reread blueprint config for an
 already-existing service. Deploy succeeded after both fixes.

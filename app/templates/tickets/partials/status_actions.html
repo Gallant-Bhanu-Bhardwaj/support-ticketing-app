@@ -20,7 +20,7 @@
         <input type="hidden" name="new_status" value="open">
         <button type="submit" class="btn btn-sm btn-outline-primary">Move back to Open</button>
     </form>
-    <p class="text-muted small mb-0">Waiting on the customer. This only moves back to Open when someone marks it so -- adding a reply here does not do it automatically.</p>
+    <p class="secondary text-caption mb-0">Waiting on the customer. This only moves back to Open when someone marks it so -- adding a reply here does not do it automatically.</p>
 
     {% elif ticket.status.value == "resolved" %}
     {% if current_user.role.value == "supervisor" %}
@@ -29,7 +29,7 @@
         <button type="submit" class="btn btn-sm btn-outline-dark">Close</button>
     </form>
     {% else %}
-    <span class="text-muted small">Only a supervisor can close this ticket.</span>
+    <span class="secondary text-caption">Only a supervisor can close this ticket.</span>
     {% endif %}
 
     {% elif ticket.status.value == "closed" %}

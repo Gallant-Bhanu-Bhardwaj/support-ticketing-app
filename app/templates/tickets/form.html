@@ -5,7 +5,7 @@
 {% block content %}
 <h1 class="mb-3">{{ "Edit ticket" if ticket else "New ticket" }}</h1>
 
-<div class="surface-card col-12 col-md-8 col-lg-6">
+<div class="surface-card form-card">
     <form method="post" action="{{ '/tickets/' ~ ticket.id if ticket else '/tickets' }}">
         <div class="mb-3">
             <label for="subject" class="form-label">Subject</label>

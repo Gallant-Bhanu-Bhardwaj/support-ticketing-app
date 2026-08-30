@@ -26,4 +26,17 @@
     --font-heading: "Sora", ui-sans-serif, system-ui, sans-serif;
     --font-body: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    /* Type scale: each token is a full `font` shorthand (weight size/line-height
+       family), applied with `font: var(--text-x)`. `font` has no letter-spacing
+       component, so --text-caption's tracking ships as a separate token. */
+    --text-h1: 700 2rem/1.25 var(--font-heading);
+    --text-h2: 600 1.25rem/1.35 var(--font-heading);
+    --text-h3: 600 1rem/1.4 var(--font-heading);
+    --text-body: 400 0.9375rem/1.6 var(--font-body);
+    --text-caption: 500 0.8125rem/1.4 var(--font-body);
+    --text-caption-letter-spacing: 0.02em;
+    --text-mono: 400 0.8125rem/1.4 var(--font-mono);
+
+    --content-max-width: 1280px;
 }

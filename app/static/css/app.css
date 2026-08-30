@@ -1,14 +1,23 @@
 /* ---------- base ---------- */
 
 body {
-    font-family: var(--font-body);
+    font: var(--text-body);
     background-color: var(--color-bg);
     color: var(--color-text-primary);
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    font-weight: 700;
+h1 {
+    font: var(--text-h1);
+    color: var(--color-text-primary);
+}
+
+h2 {
+    font: var(--text-h2);
+    color: var(--color-text-primary);
+}
+
+h3, h4, h5, h6 {
+    font: var(--text-h3);
     color: var(--color-text-primary);
 }
 
@@ -16,9 +25,20 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-secondary);
 }
 
-.mono {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
+/* Utility classes for applying the type scale to non-heading elements
+   (labels, meta text, byline timestamps). .mono itself lives at the very
+   end of this file -- see the note there for why. */
+.text-h2 {
+    font: var(--text-h2);
+}
+
+.text-h3 {
+    font: var(--text-h3);
+}
+
+.text-caption {
+    font: var(--text-caption);
+    letter-spacing: var(--text-caption-letter-spacing);
 }
 
 a {
@@ -27,6 +47,32 @@ a {
 
 a:hover {
     color: var(--color-accent-hover);
+}
+
+/* ---------- interactivity ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+    a, button, .btn, .pill, summary, .data-table tbody tr,
+    input, select, textarea {
+        transition: background-color 150ms ease, color 150ms ease,
+            border-color 150ms ease, box-shadow 150ms ease;
+    }
+}
+
+/* One consistent keyboard focus ring app-wide, in the accent color --
+   :focus-visible (not :focus) so it only shows for keyboard navigation,
+   not every mouse click. */
+:where(a, button, .btn, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Bootstrap's own :focus box-shadow uses its blue, not our accent --
+   suppressed here so it doesn't double up with the outline above. */
+.form-control:focus,
+.form-select:focus {
+    box-shadow: none;
+    border-color: var(--color-accent);
 }
 
 /* ---------- page layout / top nav ---------- */
@@ -63,9 +109,7 @@ a:hover {
 }
 
 .topnav-brand {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.05rem;
+    font: var(--text-h3);
     color: var(--color-text-primary);
 }
 
@@ -116,9 +160,9 @@ a:hover {
 }
 
 .topnav-user {
-    font-size: 0.76rem;
+    font: var(--text-caption);
+    letter-spacing: var(--text-caption-letter-spacing);
     color: var(--color-text-secondary);
-    line-height: 1.3;
     text-align: right;
 }
 
@@ -128,7 +172,8 @@ a:hover {
     color: var(--color-text-secondary);
     border-radius: 0.35rem;
     padding: 0.32rem 0.65rem;
-    font-size: 0.78rem;
+    font: var(--text-caption);
+    letter-spacing: var(--text-caption-letter-spacing);
 }
 
 .topnav-logout:hover {
@@ -138,17 +183,24 @@ a:hover {
 
 .page-main {
     flex: 1;
-    padding: 2rem;
     width: 100%;
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: 2rem;
     box-sizing: border-box;
 }
 
 .page-main--guest {
     padding: 0;
     max-width: 420px;
+    margin: 0;
 }
 
 /* ---------- surfaces ---------- */
+
+.form-card {
+    max-width: 640px;
+}
 
 .surface-card {
     background-color: var(--color-surface);
@@ -168,9 +220,7 @@ a:hover {
 }
 
 .auth-brand {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.3rem;
+    font: var(--text-h2);
     color: var(--color-text-primary);
     text-align: center;
     margin-bottom: 0.5rem;
@@ -179,8 +229,7 @@ a:hover {
 .auth-tagline {
     color: var(--color-text-secondary);
     text-align: center;
-    font-size: 0.9rem;
-    line-height: 1.5;
+    font: var(--text-body);
     margin-bottom: 1.75rem;
 }
 
@@ -190,7 +239,8 @@ a:hover {
     color: var(--priority-urgent);
     border-radius: 0.5rem;
     padding: 0.65rem 0.9rem;
-    font-size: 0.85rem;
+    font: var(--text-caption);
+    letter-spacing: var(--text-caption-letter-spacing);
     margin-bottom: 1.5rem;
 }
 
@@ -274,6 +324,7 @@ a:hover {
 
 .data-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
 }
@@ -322,8 +373,9 @@ a:hover {
 /* ---------- forms ---------- */
 
 .form-label {
+    font: var(--text-caption);
+    letter-spacing: var(--text-caption-letter-spacing);
     font-weight: 600;
-    font-size: 0.85rem;
     color: var(--color-text-primary);
 }
 
@@ -331,7 +383,6 @@ a:hover {
 
 .ticket-id {
     color: var(--color-text-secondary);
-    font-size: 0.85rem;
 }
 
 .timeline-item {
@@ -458,18 +509,31 @@ a:hover {
 .breakdown-list {
     display: flex;
     flex-direction: column;
+    gap: 0.3rem;
+    max-width: 480px;
 }
 
 .breakdown-row {
-    display: flex;
+    display: grid;
+    /* Badge/label column is fixed to --badge-col-width (set per-list, since
+       a status pill and an agent email need different widths), count column
+       is a fixed 2.5rem regardless of digit count, divider takes the rest.
+       Grid, not flexbox: flexbox can't give every row an identical column
+       width without setting min-width on the pill itself, which would
+       stretch short labels to match the longest one. */
+    grid-template-columns: var(--badge-col-width, 5.5rem) 2.5rem 1fr;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--color-border);
+    justify-items: start;
+    column-gap: 0.6rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    background-color: color-mix(in srgb, var(--row-tint, transparent) 7%, transparent);
 }
 
-.breakdown-row:last-child {
-    border-bottom: none;
+.breakdown-row-divider {
+    justify-self: stretch;
+    height: 1px;
+    background-color: var(--color-border);
 }
 
 /* ---------- alerts ---------- */
@@ -601,7 +665,8 @@ a:hover {
     border: 1px solid var(--color-border);
     border-radius: 999px;
     padding: 0.3rem 0.75rem;
-    font-size: 0.82rem;
+    font: var(--text-caption);
+    letter-spacing: var(--text-caption-letter-spacing);
     color: var(--color-text-primary);
 }
 
@@ -624,4 +689,13 @@ a:hover {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.6rem;
+}
+
+/* Deliberately last in the file: .mono is meant to win the font-family
+   battle no matter what other single-class rule (.text-caption,
+   .meta-chip, .secondary, ...) it's combined with on the same element,
+   and same-specificity ties go to whichever rule is declared last. */
+.mono {
+    font: var(--text-mono);
+    font-variant-numeric: tabular-nums;
 }

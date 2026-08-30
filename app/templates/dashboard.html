@@ -11,7 +11,7 @@
 <h1 class="mb-4">Dashboard</h1>
 
 <div class="surface-card chart-card mb-4">
-    <h2 class="h6 mb-3">Resolved per week</h2>
+    <h3 class="mb-3">Resolved per week</h3>
     <canvas id="resolved-chart" height="90"></canvas>
 </div>
 
@@ -34,6 +34,7 @@
     </div>
 </div>
 
+{% set agent_badge_col_width = (agent_breakdown | map(attribute="agent") | map("length") | list | max) if agent_breakdown else 0 %}
 {% if agent_breakdown is not none %}
 <div class="surface-card">
     <ul class="nav nav-tabs" id="breakdown-tabs" role="tablist">
@@ -46,21 +47,23 @@
     </ul>
     <div class="tab-content pt-3">
         <div class="tab-pane fade show active" id="status-pane" role="tabpanel" aria-labelledby="status-tab">
-            <div class="breakdown-list">
+            <div class="breakdown-list" style="--badge-col-width: 5.5rem;">
                 {% for row in status_breakdown %}
-                <div class="breakdown-row">
+                <div class="breakdown-row" style="--row-tint: var(--status-{{ row.status.value }});">
                     {{ badge("status", row.status.value) }}
                     <span class="mono">{{ row.count }}</span>
+                    <span class="breakdown-row-divider"></span>
                 </div>
                 {% endfor %}
             </div>
         </div>
         <div class="tab-pane fade" id="agent-pane" role="tabpanel" aria-labelledby="agent-tab">
-            <div class="breakdown-list">
+            <div class="breakdown-list" style="--badge-col-width: {{ agent_badge_col_width }}ch;">
                 {% for row in agent_breakdown %}
                 <div class="breakdown-row">
                     <span>{{ row.agent }}</span>
                     <span class="mono">{{ row.count }}</span>
+                    <span class="breakdown-row-divider"></span>
                 </div>
                 {% endfor %}
             </div>
@@ -69,12 +72,13 @@
 </div>
 {% else %}
 <div class="surface-card">
-    <h2 class="h6 mb-3">By status</h2>
-    <div class="breakdown-list">
+    <h3 class="mb-3">By status</h3>
+    <div class="breakdown-list" style="--badge-col-width: 5.5rem;">
         {% for row in status_breakdown %}
-        <div class="breakdown-row">
+        <div class="breakdown-row" style="--row-tint: var(--status-{{ row.status.value }});">
             {{ badge("status", row.status.value) }}
             <span class="mono">{{ row.count }}</span>
+            <span class="breakdown-row-divider"></span>
         </div>
         {% endfor %}
     </div>
