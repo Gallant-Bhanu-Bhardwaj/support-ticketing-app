@@ -1,0 +1,28 @@
+:root {
+    --color-sidebar-bg: #171B26;
+    --color-sidebar-text: #C7CCD9;
+    --color-sidebar-text-active: #FFFFFF;
+    --color-sidebar-hover: #232838;
+    --color-bg: #F6F7F9;
+    --color-surface: #FFFFFF;
+    --color-border: #E3E6EB;
+    --color-text-primary: #1C2130;
+    --color-text-secondary: #6B7280;
+    --color-accent: #3D6B8C;
+    --color-accent-hover: #2F5470;
+
+    --status-new: #6B7280;
+    --status-open: #3D6B8C;
+    --status-pending: #B7791F;
+    --status-resolved: #2F855A;
+    --status-closed: #9CA3AF;
+
+    --priority-urgent: #C53030;
+    --priority-high: #C05621;
+    --priority-normal: #3D6B8C;
+    --priority-low: #718096;
+
+    --font-heading: "Manrope", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

@@ -1,0 +1,3 @@
+{% macro badge(kind, value) %}
+<span class="pill" style="--pill-color: var(--{{ kind }}-{{ value }});">{{ value.replace('_', ' ') }}</span>
+{%- endmacro %}

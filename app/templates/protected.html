@@ -4,8 +4,4 @@
 
 {% block content %}
 <h1>{{ heading }}</h1>
-<p>Signed in as {{ current_user.email }} ({{ current_user.role.value }})</p>
-<form method="post" action="/auth/logout">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">Log out</button>
-</form>
 {% endblock %}
