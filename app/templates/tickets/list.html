@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/badges.html" import badge %}
 
 {% block title %}Tickets — Support Ticketing{% endblock %}
 
@@ -9,66 +10,68 @@
         <a href="/tickets/mine" class="btn btn-outline-secondary btn-sm">My tickets</a>
         <a href="/tickets/archived" class="btn btn-outline-secondary btn-sm">View archived</a>
         <a href="/tickets/export.csv?{{ base_query_string }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
-        <a href="/tickets/new" class="btn btn-primary btn-sm">New ticket</a>
+        <a href="/tickets/new" class="btn btn-accent btn-sm">New ticket</a>
     </div>
 </div>
 
-<form method="get" action="/tickets" class="row row-cols-lg-auto g-2 align-items-center mb-3">
-    <div class="col-12">
-        <input type="text" name="q" class="form-control" placeholder="Search subject or description" value="{{ q }}">
-    </div>
-    <div class="col-12">
-        <select name="status" class="form-select">
-            <option value="">Any status</option>
-            {% for choice in statuses %}
-            <option value="{{ choice.value }}" {% if status == choice %}selected{% endif %}>{{ choice.value }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-12">
-        <select name="priority" class="form-select">
-            <option value="">Any priority</option>
-            {% for choice in priorities %}
-            <option value="{{ choice.value }}" {% if priority == choice %}selected{% endif %}>{{ choice.value }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-12">
-        <select name="category" class="form-select">
-            <option value="">Any category</option>
-            {% for choice in categories %}
-            <option value="{{ choice.value }}" {% if category == choice %}selected{% endif %}>{{ choice.value }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-12">
-        <select name="assignee_id" class="form-select">
-            <option value="">Any assignee</option>
-            {% for agent in agents %}
-            <option value="{{ agent.id }}" {% if assignee_id == agent.id %}selected{% endif %}>{{ agent.email }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-12">
-        <select name="sort" class="form-select">
-            <option value="created" {% if sort == "created" %}selected{% endif %}>Created</option>
-            <option value="priority" {% if sort == "priority" %}selected{% endif %}>Priority</option>
-            <option value="updated" {% if sort == "updated" %}selected{% endif %}>Last updated</option>
-        </select>
-    </div>
-    <div class="col-12">
-        <select name="direction" class="form-select">
-            <option value="desc" {% if direction == "desc" %}selected{% endif %}>Descending</option>
-            <option value="asc" {% if direction == "asc" %}selected{% endif %}>Ascending</option>
-        </select>
-    </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-outline-primary">Filter</button>
-        <a href="/tickets" class="btn btn-outline-secondary">Reset</a>
-    </div>
-</form>
+<div class="surface-card mb-3">
+    <form method="get" action="/tickets" class="row row-cols-lg-auto g-2 align-items-center">
+        <div class="col-12">
+            <input type="text" name="q" class="form-control" placeholder="Search subject or description" value="{{ q }}">
+        </div>
+        <div class="col-12">
+            <select name="status" class="form-select">
+                <option value="">Any status</option>
+                {% for choice in statuses %}
+                <option value="{{ choice.value }}" {% if status == choice %}selected{% endif %}>{{ choice.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <select name="priority" class="form-select">
+                <option value="">Any priority</option>
+                {% for choice in priorities %}
+                <option value="{{ choice.value }}" {% if priority == choice %}selected{% endif %}>{{ choice.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <select name="category" class="form-select">
+                <option value="">Any category</option>
+                {% for choice in categories %}
+                <option value="{{ choice.value }}" {% if category == choice %}selected{% endif %}>{{ choice.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <select name="assignee_id" class="form-select">
+                <option value="">Any assignee</option>
+                {% for agent in agents %}
+                <option value="{{ agent.id }}" {% if assignee_id == agent.id %}selected{% endif %}>{{ agent.email }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <select name="sort" class="form-select">
+                <option value="created" {% if sort == "created" %}selected{% endif %}>Created</option>
+                <option value="priority" {% if sort == "priority" %}selected{% endif %}>Priority</option>
+                <option value="updated" {% if sort == "updated" %}selected{% endif %}>Last updated</option>
+            </select>
+        </div>
+        <div class="col-12">
+            <select name="direction" class="form-select">
+                <option value="desc" {% if direction == "desc" %}selected{% endif %}>Descending</option>
+                <option value="asc" {% if direction == "asc" %}selected{% endif %}>Ascending</option>
+            </select>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-outline-primary">Filter</button>
+            <a href="/tickets" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </form>
+</div>
 
-<p class="text-muted">{{ total }} matching ticket{{ "s" if total != 1 else "" }}</p>
+<p class="text-secondary-token">{{ total }} matching ticket{{ "s" if total != 1 else "" }}</p>
 
 {% set is_supervisor = current_user.role.value == "supervisor" %}
 
@@ -89,7 +92,9 @@
 </div>
 {% endif %}
 
-<table class="table table-hover align-middle">
+<div class="surface-card p-0">
+<div class="table-responsive">
+<table class="data-table mb-0">
     <thead>
         <tr>
             {% if is_supervisor %}
@@ -111,13 +116,13 @@
             {% if is_supervisor %}
             <td><input type="checkbox" name="ticket_ids" value="{{ ticket.id }}" class="ticket-checkbox"></td>
             {% endif %}
-            <td><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
-            <td>{{ ticket.requester }}</td>
-            <td>{{ ticket.primary_assignee.email }}</td>
-            <td>{{ ticket.priority.value }}</td>
-            <td>{{ ticket.category.value }}</td>
-            <td>{{ ticket.status.value }}</td>
-            <td>{{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            <td class="subject-cell"><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
+            <td class="secondary">{{ ticket.requester }}</td>
+            <td class="secondary">{{ ticket.primary_assignee.email }}</td>
+            <td>{{ badge("priority", ticket.priority.value) }}</td>
+            <td class="secondary">{{ ticket.category.value }}</td>
+            <td>{{ badge("status", ticket.status.value) }}</td>
+            <td class="secondary mono">{{ ticket.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
             <td>
                 <button
                     type="button"
@@ -129,10 +134,12 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="{{ 9 if is_supervisor else 8 }}" class="text-muted">No tickets match these filters.</td></tr>
+        <tr><td colspan="{{ 9 if is_supervisor else 8 }}" class="secondary">No tickets match these filters.</td></tr>
         {% endfor %}
     </tbody>
 </table>
+</div>
+</div>
 </form>
 
 {% if is_supervisor %}
@@ -145,7 +152,7 @@
 </script>
 {% endif %}
 
-<nav aria-label="Ticket pages">
+<nav aria-label="Ticket pages" class="mt-3">
     <ul class="pagination">
         <li class="page-item {{ 'disabled' if page <= 1 }}">
             <a class="page-link" href="/tickets?{{ base_query_string }}&page={{ page - 1 }}">Previous</a>

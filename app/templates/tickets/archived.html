@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/badges.html" import badge %}
 
 {% block title %}Archived tickets — Support Ticketing{% endblock %}
 
@@ -8,7 +9,9 @@
     <a href="/tickets" class="btn btn-outline-secondary btn-sm">Back to tickets</a>
 </div>
 
-<table class="table table-hover align-middle">
+<div class="surface-card p-0">
+<div class="table-responsive">
+<table class="data-table mb-0">
     <thead>
         <tr>
             <th>Subject</th>
@@ -23,12 +26,12 @@
     <tbody>
         {% for ticket in tickets %}
         <tr id="ticket-row-{{ ticket.id }}">
-            <td><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
-            <td>{{ ticket.requester }}</td>
-            <td>{{ ticket.primary_assignee.email }}</td>
-            <td>{{ ticket.priority.value }}</td>
-            <td>{{ ticket.category.value }}</td>
-            <td>{{ ticket.status.value }}</td>
+            <td class="subject-cell"><a href="/tickets/{{ ticket.id }}">{{ ticket.subject }}</a></td>
+            <td class="secondary">{{ ticket.requester }}</td>
+            <td class="secondary">{{ ticket.primary_assignee.email }}</td>
+            <td>{{ badge("priority", ticket.priority.value) }}</td>
+            <td class="secondary">{{ ticket.category.value }}</td>
+            <td>{{ badge("status", ticket.status.value) }}</td>
             <td>
                 <button
                     class="btn btn-sm btn-outline-primary"
@@ -39,8 +42,10 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-muted">No archived tickets.</td></tr>
+        <tr><td colspan="7" class="secondary">No archived tickets.</td></tr>
         {% endfor %}
     </tbody>
 </table>
+</div>
+</div>
 {% endblock %}
