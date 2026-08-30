@@ -3,15 +3,11 @@
 ### Prompt
 Implement the project scaffold only — no ticketing logic yet.
 
-- Folder structure: app/ (models, schemas, routers, services, core, templates,
-  static), tests/, alembic/.
+- Folder structure: app/ (models, schemas, routers, services, core, templates, static), tests/, alembic/.
 - FastAPI app instance with a /healthz endpoint.
-- SQLAlchemy 2.0 engine + session dependency, configured via pydantic-settings
-  reading DATABASE_URL from .env. Structure it so swapping in a Postgres URL
-  for production needs no code changes, only a different DATABASE_URL.
+- SQLAlchemy 2.0 engine + session dependency, configured via pydantic-settings reading DATABASE_URL from .env. Structure it so swapping in a Postgres URL for production needs no code changes, only a different DATABASE_URL.
 - Initialize Alembic, generate an empty first migration.
-- Jinja2 templates: one base.html pulling in Bootstrap 5 and HTMX from CDN,
-  plus a placeholder home page.
+- Jinja2 templates: one base.html pulling in Bootstrap 5 and HTMX from CDN, plus a placeholder home page.
 - pytest config and one trivial test hitting /healthz.
 - requirements.txt (or pyproject.toml) pinned to the stack in CLAUDE.md.
 - Update .gitignore to also exclude *.db, .venv/, .pytest_cache/.
@@ -36,10 +32,8 @@ results on the first try.
 ### What you corrected
 Nothing I asked for — no correction prompt was needed for the scaffold. One
 self-initiated change worth noting: after the first pytest run printed a
-PytestDeprecationWarning, Claude Code added
-`asyncio_default_fixture_loop_scope = function` to pytest.ini on its own,
-before I saw any output, to silence it. Not a fix to something broken — a
-proactive cleanup I didn't ask for.
+PytestDeprecationWarning, Claude Code added `asyncio_default_fixture_loop_scope = function` to pytest.ini 
+on its own, before I saw any output, to silence it. Not a fix to something broken — a proactive cleanup I didn't ask for.
 
 Commit: 31c727c
 
