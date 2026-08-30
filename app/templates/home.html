@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Home — Support Ticketing{% endblock %}
+{% block title %}Support Ticketing{% endblock %}
 
 {% block content %}
-<h1>Support Ticketing</h1>
-<p><a href="/tickets">View tickets</a> &middot; <a href="/auth/login">Sign in</a></p>
+<div class="auth-card">
+    <div class="auth-brand">Support Ticketing</div>
+    <p class="auth-tagline">A shared ticket queue for support teams — track priority, SLA response times, and the full history behind every ticket.</p>
+    <a href="/auth/login" class="btn btn-accent w-100">Sign in</a>
+    <a href="/tickets" class="auth-secondary-link">View tickets</a>
+</div>
 {% endblock %}
