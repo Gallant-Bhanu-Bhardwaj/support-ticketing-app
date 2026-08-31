@@ -33,7 +33,6 @@ wait roughly a minute and reload rather than assuming it's broken.
 
 ## Goal checklist
 
-Mark each honestly. Partial is fine say what is partial.
 | # | Goal | Status | Notes |
 |---|------|--------|-------|
 | 1 | Accounts and roles | Done | Email/password sign-in, JWT in an HTTP only cookie, supervisor and agent roles. Every mutating route re-checks role/ownership in the service layer (`app/services/permissions.py`), not just in templates e.g. an agent submitting a ticket assigned to someone else, or trying to reassign a ticket away from themselves, gets a server-side 403. |
