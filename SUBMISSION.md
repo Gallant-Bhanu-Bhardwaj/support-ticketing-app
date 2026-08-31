@@ -4,7 +4,7 @@ Fill this in and commit it. This is the first file we open.
 
 ## Links
 
-- **GitHub repository:** <[public repo URL](https://github.com/Gallant-Bhanu-Bhardwaj/support-ticketing-app)>
+- **GitHub repository:** <(https://github.com/Gallant-Bhanu-Bhardwaj/support-ticketing-app)>
 - **Live application:** <https://support-ticketing-foeo.onrender.com/>
 
 ## Notes for the reviewer
