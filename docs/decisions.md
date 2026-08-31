@@ -13,7 +13,7 @@ Real decisions made while building this, in the order they happened.
 - **Why:** Simpler at the time one check, one response path.
 
 - **Later reversed:** Switched to the conventional 401/403 split (commit
-  7e6dec6), since a reviewer reading the code would expect standard REST
+  405798a), since a reviewer reading the code would expect standard REST
   semantics, and the split cost almost nothing to make once the codebase
   existed to check it against.
 
@@ -69,7 +69,7 @@ Real decisions made while building this, in the order they happened.
   contradicted the brief's own acceptance criteria for goal 1  "Agent
   attempting to reassign a ticket away from themselves → rejected by the
   API, with a clear error." Changed to explicitly reject with 403 and a
-  clear message instead of silently overriding (commit 5bc25d3).
+  clear message instead of silently overriding (commit 491cac0).
 
 ## Decision — Collaborators must be agents (Goal 5)
 

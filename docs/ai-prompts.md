@@ -35,7 +35,7 @@ self-initiated change worth noting: after the first pytest run printed a
 PytestDeprecationWarning, Claude Code added `asyncio_default_fixture_loop_scope = function` to pytest.ini 
 on its own, before I saw any output, to silence it. Not a fix to something broken a proactive cleanup I didn't ask for.
 
-Commit: 31c727c
+Commit: d2eba29
 
 
 ## Session 2 — Accounts & roles (Goal 1)
@@ -71,7 +71,7 @@ app/services/permissions.py with real logic built against a TicketLike
 Protocol so goal 2's Ticket model plugs straight in; python -m app.seed
 creating 1 supervisor + 2 agents; login page + a /dashboard placeholder;
 /admin added specifically to give require_role a supervisor-only route to
-test against. 16 tests passed. Committed as e2c9cf1.
+test against. 16 tests passed. Committed as a52a5bd.
 
 ### What you corrected
 Real bug: pip installed bcrypt==5.0.0 (unpinned); passlib 1.7.4 detects its
@@ -91,7 +91,7 @@ missing token, invalid token, and wrong role, instead of the conventional
 
 Reversed later: originally kept uniform 403 for all auth failures (missing
 token, invalid token, wrong role). Revisited in a later session (commit
-7e6dec6) and split it to the conventional 401 (missing/invalid/expired
+405798a) and split it to the conventional 401 (missing/invalid/expired
 token) vs 403 (valid token, wrong role) see docs/decisions.md. Only three
 tests were actually asserting the old 403-for-missing-token behavior
 (test_protected_route_without_token_is_forbidden, renamed to expect 401,
@@ -130,7 +130,7 @@ HTMX partial swaps, no full page reloads. Enums: priority
 (bug/billing/how_to/feature_request/other, arbitrary generic taxonomy),
 status (all five lifecycle states exist on the column, but this goal only
 ever writes "new" transitions are goal 4's job). 26 tests passing (10
-new). Committed as cd9c00f.
+new). Committed as 1b9f9bc.
 
 ### What you corrected
 No failures this session. Verified FastAPI's Annotated[TicketWrite, Form()]
@@ -172,7 +172,7 @@ decision. Ticket detail page renders replies chronologically, internal
 notes visually distinguished from customer visible ones. Checkbox to bool
 binding (is_internal=on → True, field omitted → default False) worked via
 Pydantic's form coercion on the first try. 32 tests passing (6 new).
-Committed as 8111a94.
+Committed as bbd6dc8.
 
 ### What you corrected
 None : first run passed clean, no failures.
@@ -217,7 +217,7 @@ as a pure function over period lists (unit-testable without DB setup) plus
 a DB-backed wrapper; Resolved→Closed gated by goal 1's
 permissions.can_close_ticket; manual only Pending→Open with a regression
 test proving a reply never autoresumes the clock. 56 tests passing (24
-new). Committed as 055ceb9. Manually walked new→open→pending→open→resolved,
+new). Committed as e07ba00. Manually walked new→open→pending→open→resolved,
 agent-blocked-from-closing, supervisor-closes, reopen-within-window, and
 illegal new→closed (409) through the running server all matched.
 
@@ -248,7 +248,7 @@ test_elapsed_excludes_multiple_closed_periods_summed (pure-function, hand-
 built period lists) plus test_elapsed_for_ticket_with_multiple_pending_cycles
 and test_elapsed_for_ticket_with_multiple_closed_cycles (driven through real
 repeated transitions, not hand-built lists). All 60 tests pass. Committed
-as 05b05bb.
+as 0d27053.
 
 
 
@@ -295,7 +295,7 @@ Create/edit assignment rules enforced server-side (agents always
 self-assign; supervisors must pick or get 422). GET /tickets/mine.
 Add/remove-collaborator endpoints. Retrofit: permissions.can_act_on_ticket
 now gates edit, archive, restore, reply, and status transitions across
-ticket_service, reply_service, lifecycle_service, and collaborator_service  not just new code. 79 tests passing. Committed as 46417d3.
+ticket_service, reply_service, lifecycle_service, and collaborator_service  not just new code. 79 tests passing. Committed as f201784.
 
 ### What you corrected
 Two real bugs, not invented: 
@@ -320,7 +320,7 @@ Real gap surfaced and flagged rather than guessed: GET /tickets and GET
 /tickets/{id} weren't restricted by assignment. Resolved in a follow-up —
 see addendum.
 
-Addendum — three-point follow-up (commit 5bc25d3):
+Addendum — three-point follow-up (commit 491cac0):
 1. View scoping fixed ticket_service.list_tickets now takes a viewer and
 delegates to list_my_tickets for non-supervisors GET /tickets and GET
 /tickets/archived inherit this. GET /tickets/{id} now goes through
@@ -348,7 +348,7 @@ GET /tickets/new has no specific ticket's data to leak; collaborators and
 replies expose only POST endpoints; /dashboard, /admin, /auth/login aren't
 ticket-specific. Nothing else had this pattern. Verified on the live
 server: the 403 response contains zero occurrences of the ticket's
-subject. 90 tests passing. Committed as ced6acc.
+subject. 90 tests passing. Committed as 2e3dd93.
 
 ## Session 7 — Search, filter, sort, pagination (Goal 6)
 
@@ -385,7 +385,7 @@ filtering" requirement by printing the actual compiled SQL and confirming
 real WHERE/ORDER BY/LIMIT/OFFSET clauses, including viewer-scoping baked
 into the same query. Confirmed .ilike() compiles portably (lower(col) LIKE
 lower(pattern)), not Postgres-specific ILIKE. 106 tests passing (16 new).
-Committed as bace0ab.
+Committed as 7ef9014.
 
 ### What you corrected
 Two real bugs, not invented: (1) priority sorting would have been
@@ -398,7 +398,7 @@ empirically before fixing, then accepted filters as raw strings and parsed
 them explicitly, treating empty as "no filter" and genuinely invalid values
 as a real 422 with a clear message.
 
-Addendum — three-item check requested separately (commit 4229232): all
+Addendum — three-item check requested separately (commit 9bf193b): all
 three were test-coverage gaps, not functional bugs — the underlying code
 was already correct in all three cases.
 1. Combined filters: no test previously exercised more than one filter at
@@ -458,7 +458,7 @@ shared with search_tickets; confirmed uncapped by page size
 bulk reassign distinguishes two genuinely different rejection reasons: an
 agent's own ticket fails at the reassignment-specific check, a ticket with
 zero relationship fails earlier at the access check. 126 tests passing.
-Committed as 981d5ee.
+Committed as ce2853a.
 
 ### What you corrected
 Real bug, not invented: the "N succeeded, M refused" summary line rendered
@@ -466,7 +466,7 @@ correct counts in manual checks, but a newline in the template between the
 two numbers broke every text-matching test. Fixed by collapsing to one
 line — genuinely better UI output, not just a test-compatibility fix.
 
-Addendum — three-item check requested separately (commit f844aeb):
+Addendum — three-item check requested separately (commit 8d5aa45):
 1. CSV columns — breach_status was genuinely missing, added as binary
 (breaching/on_track) via elapsed_response_time_for_ticket +
 TARGET_RESPONSE_TIME. Deliberately binary, not three-state — the "at-risk"
@@ -523,7 +523,7 @@ headline counts, status breakdown, agent breakdown (including a zero-ticket
 agent, confirming LEFT JOIN not inner join), 8-week chart bucketing
 (including a 9-weeks-ago ticket that must not appear in any bucket), and
 agent-vs-supervisor scoping for headline numbers. 138 tests passing.
-Committed as 73ee2e6.
+Committed as c62c857.
 
 ### What you corrected
 Real prerequisite gap, not optional scope: nothing tracked when a ticket
@@ -581,7 +581,7 @@ route introspection (no PUT/PATCH/DELETE on any history/timeline path),
 structural (no update/delete/edit/remove-named function exists in
 history_service), and behavioral (guessed mutation URLs 404/405, row
 confirmed byte-for-byte unchanged). 149 tests passing. Committed as
-5a9f5b8.
+1007994.
 
 ### What you corrected
 Bug in own test, not the app: a test simulated an unchecked reply checkbox
@@ -590,7 +590,7 @@ this directly before concluding it wasn't an app bug (real browsers omit
 the field entirely when unchecked). Fixed the test, not the app.
 
 Addendum — four-item field-level check requested separately (commit
-d695fa3):
+e04630f):
 1. Status change field assertions — already covered, no gap.
 2. Reassignment field assertions — already covered, no gap.
 3. Reply FK linkage — real gap, fixed. Added event.reply_id == reply.id
@@ -656,7 +656,7 @@ get_current_user_optional so the nav alert badge works on pages that don't
 require login instead of 401ing. Manually verified end-to-end on the live
 server: backdated a ticket to force a real breach, confirmed nav badge,
 alerts page listing, and acknowledge clearing all matched. 162 tests
-passing. Committed as 4b94636.
+passing. Committed as eac2749.
 
 ### What you corrected
 Nothing corrected this session — reappearance logic verified correct
@@ -722,7 +722,7 @@ pip-audit found 26 known vulnerabilities across 7 dependencies; traced the
 most severe against actual usage and declined to upgrade — see
 decisions.md.
 
-Addendum — JWT secret and cookie Secure-flag fixes (commit 4514020):
+Addendum — JWT secret and cookie Secure-flag fixes (commit c2c925d):
 1. JWT secret: jwt_secret_key now has no default in Settings — app fails to
 start with pydantic.ValidationError if JWT_SECRET_KEY isn't set. Local dev
 unaffected since .env sets it explicitly.
@@ -784,7 +784,7 @@ Confirmed fail-fast behavior concretely: ran the actual production start
 command with .env absent and no JWT_SECRET_KEY set, matching Render's
 filesystem — confirmed exit 1 before binding a port. .env confirmed never
 committed via git log --all -- .env (empty history). 166 tests passing.
-Committed as fbc3c6f.
+Committed as fe51f70.
 
 ### What you corrected
 No live Postgres available in this environment to test an actual
@@ -803,7 +803,7 @@ JWT_SECRET_KEY=change-me, the exact copy-pasteable-looking-safe value the
 code-level fix was meant to eliminate. Updated to genuinely empty values
 for all variables, including ENVIRONMENT.
 
-Addendum — deployment (commit 058a417): First deploy attempt failed
+Addendum — deployment (commit f6e2684): First deploy attempt failed
 Render defaulted to Python 3.14 (no PYTHON_VERSION pinned), which has no
 pre-built wheel for the pinned pydantic-core version. pip fell back to
 compiling it from source via maturin/Rust, which failed on Render's
