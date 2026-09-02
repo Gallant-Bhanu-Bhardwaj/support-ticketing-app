@@ -79,7 +79,7 @@ Real decisions made while building this, in the order they happened.
 
 - **Rejected:** Gating the whole bulk endpoint at the route level, so only supervisors could even hit it.
 
-- **Why:** If I'd gated the route itself, I'd have ended up with two separate places that decide "who's allowed to reassign or close a ticket": the route-level check, and the per ticket check that already exists for the single ticket path. Two rules doing the same job always risk drifting apart over time, someone fixes one and forgets the other, and now the bulk and single ticket paths disagree about who's allowed to do what. Reusing the exact same per ticket check for both means there's only ever one place that answer lives. I confirmed this actually works the way I intended with a dedicated test, a crafted request from an unauthorized agent still gets a normal 200 response with a per-item refusal, not an unexpected 403 at the route level.
+- **Why:** If I'd gated the route itself, I'd have ended up with two separate places that decide "who's allowed to reassign or close a ticket": the route-level check, and the per ticket check that already exists for the single ticket path. Two rules doing the same job always risk drifting apart over time, someone fixes one and forgets the other, and now the bulk and single ticket paths disagree about who's allowed to do what. Reusing the exact same per ticket check for both means there's only ever one place that answer lives. I confirmed this actually works the way I intended with a dedicated test, a crafted request from an unauthorized agent still gets a normal 200 response with a per item refusal, not an unexpected 403 at the route level.
 
 ## Decision — Dashboard visibility (Goal 8)
 
