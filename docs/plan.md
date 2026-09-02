@@ -1,7 +1,5 @@
 # Plan
 
-Answer each of these, in your own words.
-
 ## How did you break the work into sessions?
 
 One session per prompt, roughly matching the 10 goals. Plus three sessions that weren't tied to a specific goal: an initial scaffold session before any feature work, a review pass once all 10 goals were done, and a final session for seed data and deployment.
