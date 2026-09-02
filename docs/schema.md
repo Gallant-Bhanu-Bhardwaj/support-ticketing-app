@@ -203,31 +203,8 @@ about, since it's easy to assume otherwise:**
 
 ## What would break first at 100x the data
 
-The SLA/breach calculations are the first thing that would need to change.
-`alerts_service.list_alerts`, `dashboard_service.headline_counts`, and
-`export_service`'s CSV `breach_status` column (computed once per exported
-row) all fetch every active ticket in the viewer's scope and call
-`elapsed_response_time_for_ticket` on each one in a Python loop and that
-function itself issues two more queries per ticket (its pending and closed
-periods three once resolved periods are included). At current demo data
-volume (dozens of tickets) this is invisible at 100x (thousands of active
-tickets per viewer scope), it's an N+1 query pattern that would need to
-become a single aggregate query realistically, moving the breach
-determination into SQL (or a materialized/cached column refreshed by a
-background job) rather than a per-request Python loop.
+The SLA and breach calculations are the first thing that would need to change. `alerts_service.list_alerts`, `dashboard_service.headline_counts`, and `export_service`'s CSV `breach_status` column (computed once per exported row) all fetch every active ticket in the viewer's scope and call `elapsed_response_time_for_ticket` on each one in a Python loop. That function itself issues two more queries per ticket for its pending and closed periods, three once resolved periods are included. At current demo data volume (dozens of tickets), this is invisible. At 100x, with thousands of active tickets per viewer scope, it's an N+1 query pattern that would need to become a single aggregate query. Realistically, that means moving the breach determination into SQL, or into a materialized or cached column refreshed by a background job, instead of a per request Python loop.
 
-Second: `ticket_service.matching_ticket_ids`, the shared scoping/filtering
-subquery behind the queue, CSV export, dashboard, and alerts, does an
-`OUTER JOIN` to `ticket_collaborators` and a `DISTINCT` to dedupe. This is
-fine at current scale; at 100x it's the kind of query that would need the
-`is_archived`, `status`, `priority`, and `primary_assignee_id` columns
-covered by composite indexes rather than relying on the single column index
-on `ticket_id` that most of these tables currently have  none of the
-tables in this schema have a composite index today.
+Second: `ticket_service.matching_ticket_ids`, the shared scoping and filtering subquery behind the queue, CSV export, dashboard, and alerts, does an `OUTER JOIN` to `ticket_collaborators` and a `DISTINCT` to dedupe. That's fine at current scale. At 100x, the `is_archived`, `status`, `priority`, and `primary_assignee_id` columns would need to be covered by composite indexes instead of relying on the single-column index on `ticket_id` that most of these tables currently have. None of the tables in this schema have a composite index today.
 
-Third: the text search (`ILIKE '%term%'` on `subject`/`description`) can't
-use a B-tree index at all it's a full table scan on every search request
-regardless of scale. At 100x the data this would need a real text search
-index (Postgres `tsvector`/GIN, or an external search service), it was left
-as a plain `ILIKE` here because goal 6 only asked for server-side filtering,
-not for it to scale past a demo dataset.
+Third: the text search (`ILIKE '%term%'` on `subject`/`description`) can't use a B-tree index at all. It's a full table scan on every search request, regardless of scale. At 100x the data, this would need a real text search index  Postgres `tsvector`/GIN, or an external search service. It was left as a plain `ILIKE` here because goal 6 only asked for server side filtering, not for it to scale past a demo dataset.

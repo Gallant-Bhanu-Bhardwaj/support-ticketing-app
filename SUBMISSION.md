@@ -48,48 +48,21 @@ wait roughly a minute and reload rather than assuming it's broken.
 
 ## How much time did you actually spend?
 
-I estimated ~17-18 hours going in. Reconstructed from git commit
-timestamps, the actual work spanned from 12:00 on 2026-08-29 to 00:29 the
-following morning roughly 12.5 hours of calendar time, notably under
-what I'd expected.
-
-Within that window, goal-by-goal implementation was fast and consistent:
-15-25 minutes per goal from prompt to committed, tested code, across all
-10 goals. The time that actually added up wasn't writing code it was
-review and decision-making around it, a ~3h45m stretch after goal 5
-(collaborators) spent on review pass followups and backfilling
-decisions.md, and a further ~3h50m gap before evening deployment work
-began. Deployment itself, once started, took under an hour to get right,
-including diagnosing and fixing a Python-version mismatch; documentation
-took 39 minutes the next morning.
-
-The estimate wasn't wrong about total effort so much as about where the
-time would go the code itself was never the bottleneck the review
-discipline around each goal was.
+I thought this would take 17-18 hours. Looking at the git commit timestamps. The coding itself was fast. Each goal took 15-25 minutes, from prompt to committed and tested code, across all 10 goals. What actually ate the time was everything around the code about 3 hours 45 minutes after goal 5, doing review-pass follow-ups and catching up decisions.md, then another 3 hours 50 minute gap before I sat down to deploy that evening. Deployment itself took under an hour once I started, including tracking down a Python version mismatch. Docs took 39 minutes the next morning. So the estimate wasn't wrong about total effort. It was wrong about where the effort would go writing the code was never the hard part, reviewing it carefully was.
 
 ## What would you do next, with another 12 hours?
 
 In priority order:
 
-1. Fix the N+1 query pattern behind SLA calculations. `alerts_service`,
-   `dashboard_service`, and `export_service` each recompute
-   `elapsed_response_time_for_ticket` per ticket in a Python loop, issuing
-   3 extra queries per ticket. Correct at this data volume, but the first
-   thing that would need to become a single aggregate query at real scale.
-2. Add composite indexes. Every table currently has at most single column
-   indexes; the queue/dashboard/alerts filters combine status, priority,
-   is_archived, and primary_assignee_id, none of which are covered by a
-   matching composite index today.
-3. A real dependency upgrade pass. pip audit found 26 known
-   vulnerabilities across 7 packages  the review pass investigated the
-   most severe one and left the rest deliberately unfixed because
-   upgrading starlette independently risked breaking the app given
-   FastAPI's version pin. With more time, the right move is upgrading
-   FastAPI itself first, then letting the rest cascade cleanly.
-4. Replace the plain ILIKE text search with a real index Postgres
-   tsvector/GIN since ILIKE can't use a B-tree index and is a full
-   table scan regardless of queue size.
+1. Fix the N+1 query pattern in the SLA calculations. `alerts_service`, `dashboard_service`, and `export_service` each recompute `elapsed_response_time_for_ticket` in a Python loop, one ticket at a time that's 3 extra queries per ticket. Fine at this data volume, but the first thing I'd turn into one aggregate query at real scale.
+
+2. Add composite indexes. Right now every table has single column indexes at most. The queue, dashboard, and alerts filters combine status, priority, is_archived, and primary_assignee_id, and none of that combination is actually covered by an index yet.
+
+3. Actually upgrade the dependencies. pip audit found 26 known vulnerabilities across 7 packages. I looked into the worst one during the review pass and left the rest alone on purpose, since upgrading starlette by itself risked breaking things given FastAPI's version pin. With more time, I'd upgrade FastAPI first and let the rest follow from there.
 
 
 ## What are you least happy with in this codebase, and why?
-The enum columns tickets.priority/category/status, users.role, ticket_history_events.event_type have no CHECK constraint at the database level, confirmed directly against the actual schema, not assumed. Validity is enforced entirely by Python's Enum type and Pydantic on the way in. A row inserted via raw SQL with an out-of-range string would be silently accepted. It's consistent with how the rest of the authorization and business logic in this app works enforced in the service layer, not the database but it's the one place where I'd want defense in depth, I didn't build a bad value getting in through anything other than the app's own routes has no second line of defense.
+
+The enum columns are what I like least: tickets.priority, tickets.category, tickets.status, users.role, and ticket_history_events.event_type. None of them have a CHECK constraint at the database level. I checked the actual schema to confirm this, I didn't just assume it. Validity is enforced entirely by Python's Enum type and Pydantic on the way in. If someone inserted a row through raw SQL with some out of range string, the database would accept it without complaint.
+
+That's actually consistent with how the rest of the app works. Authorization and business logic all live in the service layer, not the database. But this is the one place where I'd want a second line of defense and didn't build one. If a bad value ever got in through anything other than the app's own routes, there's nothing to catch it.
