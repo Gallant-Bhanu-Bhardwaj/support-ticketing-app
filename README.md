@@ -1,4 +1,4 @@
-#Support Ticketing
+# Support Ticketing
 
 ## The scenario
 
